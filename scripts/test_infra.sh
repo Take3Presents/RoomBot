@@ -18,14 +18,14 @@ usage() {
 }
 
 start() {
-    coverage run --data-file "$COVERAGEFILE" \
+    uv run --active coverage run --data-file "$COVERAGEFILE" \
 		--source="reservations,party,waittime" \
-		"${BACKEND}/manage.py" migrate &> "$LOG"
-    nohup coverage run --data-file "$COVERAGEFILE" \
+		"${BACKEND}/manage.py" migrate >> "$LOG" 2>&1
+    nohup uv run --active coverage run --data-file "$COVERAGEFILE" \
 	  --source="backend" --append \
 	  "${BACKEND}/manage.py" \
 	  runserver --noreload --nothreading 0.0.0.0:8000 \
-	  < /dev/null &>> "$LOG" & disown
+	  < /dev/null >> "$LOG" 2>&1 & disown
 }
 
 stop() {
@@ -35,7 +35,7 @@ stop() {
     PIDS="$(pgrep -f '.*manage.py runserver.*')"
     if [ -n "$PIDS" ] ; then
 	for pid in $PIDS ; do
-	    if ps "$pid" &> /dev/null ; then
+	    if ps "$pid" > /dev/null 2>&1 ; then
 		kill -s SIGTERM "$pid"
 	    fi
 	done
@@ -53,7 +53,7 @@ fi
 ACTION="$1"
 shift
 
-. "${BACKEND}/venv/bin/activate"
+. "${BACKEND}/.venv/bin/activate"
 if [ "$ACTION" == "start" ] ; then
     start
 elif [ "$ACTION" == "stop" ] ; then

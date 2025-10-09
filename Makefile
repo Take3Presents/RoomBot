@@ -1,10 +1,10 @@
 .PHONY = frontend_build frontend_dev frontend_archive frontend_clean \
-	backend_dev backend_archive backend_clean backend_migrations backend_env \
-	archive sample_data clean distclean backend_clean_data frontend_clean \
-	backend_distclean
+	local_backend_dev backend_archive backend_clean backend_migrations \
+	local_backend_env archive local_sample_data clean distclean \
+	local_backend_clean_data frontend_clean backend_distclean
 
 # generates the frontend static content
-frontend_build: backend_env
+frontend_build: local_backend_env
 #	test -d frontend/public/layouts || ./scripts/fetch-images
 	docker build -t roombaht:latest frontend/
 	docker run -u node \
@@ -22,6 +22,7 @@ backend_archive:
 		--exclude "__pycache__" \
 		--exclude ".env" \
 		--exclude "venv" \
+		--exclude ".venv" \
 		--exclude "db.sqlite3" \
 		roombaht-backend > build/roombaht-backend.tgz && \
 	rm -rf build/roombaht-backend
@@ -42,39 +43,41 @@ frontend_dev: frontend_build
 		-u node \
 		-v $(shell pwd)/frontend/:/app roombaht:latest
 
-backend_env:
-	test -d backend/venv || \
-		( mkdir backend/venv && \
-			virtualenv -p python3.10 backend/venv) && \
-		backend/venv/bin/python3 -m pip install --upgrade pip
-	backend/venv/bin/pip install \
-		-r backend/requirements.txt \
-		-r backend/requirements-dev.txt \
-		--upgrade
+install_python:
+	uv python find `cat .python-version` || \
+		uv python install `cat .python-version`
 
-backend_dev: backend_env
+local_backend_env: install_python
+	test -d backend/.venv || \
+		( mkdir backend/.venv && \
+		    uv sync \
+		      --python `cat .python-version` \
+		      --project backend/pyproject.toml \
+		      --frozen )
+
+local_backend_dev: local_backend_env
 	./scripts/start_backend_dev.sh
 
 # tests are cool
-backend_tests: backend_env
+local_backend_tests: local_backend_env
 	./scripts/api_test.sh
 
 # automagically generate django migrations
-backend_migrations: backend_env
-	backend/venv/bin/python3 backend/manage.py makemigrations
+local_backend_migrations: local_backend_env
+	uv run --python backend/.venv backend/manage.py makemigrations
 
 # targets to handle data for local dev environment
-sample_data:
+local_sample_data: local_backend_env
 	./scripts/sample_data.sh
 
-backend_clean_data:
+local_backend_clean_data:
 	rm -rf backend/db.sqlite3
 
 # clean up build artifacts and such
-backend_distclean: backend_clean backend_clean_data
-	rm -rf backend/venv
+local_backend_distclean: local_backend_clean local_backend_clean_data
+	rm -rf backend/.venv
 
-backend_clean:
+local_backend_clean:
 	rm -rf build/roombaht-backend.tgz
 
 frontend_clean:
@@ -82,5 +85,5 @@ frontend_clean:
 
 # project-wide targets
 archive: backend_archive frontend_archive
-clean: backend_clean frontend_clean
-distclean: backend_distclean frontend_clean
+clean: local_backend_clean frontend_clean
+distclean: local_backend_distclean frontend_clean

@@ -19,7 +19,7 @@ export ROOMBAHT_URL_PORT="@URL_PORT@"
 export ROOMBAHT_URL_SCHEMA="@URL_SCHEMA@"
 
 if [ "${ROOMBAHT_SEND_ONBOARDING,,}" == "true" ] ; then
-    /opt/roombaht-backend/venv/bin/python3 /opt/roombaht-backend/manage.py send_onboarding
+    /opt/roombaht-backend/.venv/bin/python3 /opt/roombaht-backend/manage.py send_onboarding
 else
     2>&1 echo "Not sending onboarding emails"
 fi

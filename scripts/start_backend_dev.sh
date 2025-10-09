@@ -12,9 +12,8 @@ fi
 source "$ROOMBAHT_CONFIG"
 printenv | grep ROOMBAHT
 
-source backend/venv/bin/activate
-which python
+source backend/.venv/bin/activate
 
 cd backend && \
-python manage.py migrate && \
-exec python manage.py runserver 0.0.0.0:8000
+uv run --active python manage.py migrate && \
+exec uv run --active python manage.py runserver 0.0.0.0:8000
