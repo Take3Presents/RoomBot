@@ -1,5 +1,6 @@
 import time
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.db.utils import OperationalError
@@ -14,8 +15,11 @@ class Command(BaseCommand):
             try:
                 connection.cursor()
                 break
-            except OperationalError:
-                pass
+            except OperationalError as e:
+                if ("does not exist" in e.args[0]):
+                    db_name = settings.DATABASES['default']['NAME']
+                    with connection._nodb_cursor() as cursor:
+                        cursor.execute(f'CREATE DATABASE "{db_name}"')
             self.stdout.write('Database unavailable, waiting 1 second...')
             time.sleep(1)
 
