@@ -22,7 +22,7 @@ backend_archive:
 		--exclude "__pycache__" \
 		--exclude ".env" \
 		--exclude "venv" \
-		--exclide ".venv" \
+		--exclude ".venv" \
 		--exclude "db.sqlite3" \
 		roombaht-backend > build/roombaht-backend.tgz && \
 	rm -rf build/roombaht-backend
