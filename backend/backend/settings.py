@@ -117,6 +117,8 @@ else:
     }
 
 # test and dev fixtures
+TEST_RUNNER = 'pytest_django.runner.TestRunner'
+
 FIXTURE_DIRS = [
 ]
 

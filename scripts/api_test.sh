@@ -39,17 +39,16 @@ manage() {
 
 run() {
     # first run tests with static fixtures
-    "${SCRIPTDIR}/manage_dev" loaddata test_users
+    source "${ROOTDIR}/test.env"
+
+    manage loaddata test_users
     "$TAVERN" backend/tavern/test_login.tavern.yml
 
-    "${SCRIPTDIR}/manage_dev" loaddata test_users
-    "${SCRIPTDIR}/manage_dev" loaddata test_rooms
+    manage loaddata test_users
+    manage loaddata test_rooms
     "$TAVERN" backend/tavern/test_room_swap.tavern.yml
     "$TAVERN" backend/tavern/test_admin.tavern.yml
     "$TAVERN" backend/tavern/test_reports.tavern.yml
-
-    # we want to test cli tools
-    source "${ROOTDIR}/test.env"
 
     manage room_list >> "$LOG" 2>&1
     manage room_list -t Queen >> "$LOG" 2>&1
@@ -59,8 +58,8 @@ run() {
     manage check --deploy >> "$LOG" 2>&1
 
     # then run tests following typical import data flow
-    "${SCRIPTDIR}/manage_dev" flush --noinput >> "$LOG" 2>&1
-    "${SCRIPTDIR}/manage_dev" migrate >> "$LOG" 2>&1
+    manage flush --noinput >> "$LOG" 2>&1
+    manage migrate >> "$LOG" 2>&1
     manage create_staff "${ROOTDIR}/samples/exampleMainStaffList.csv"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleBallysRoomList.csv" \
@@ -71,7 +70,7 @@ run() {
            --hotel nugget --preserve --force \
            --default-check-in "1999/1/1" --default-check-out "1999/1/10"
 
-    "${SCRIPTDIR}/manage_dev" loaddata test_users
+    manage loaddata test_users
     "$TAVERN" backend/tavern/test_guests.tavern.yml
     manage room_list >> "$LOG" 2>&1
     manage room_list -t Queen >> "$LOG" 2>&1

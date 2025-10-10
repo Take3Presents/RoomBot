@@ -18,10 +18,10 @@ usage() {
 }
 
 start() {
-    uv run --active coverage run --data-file "$COVERAGEFILE" \
+    uv run --env-file "${ROOTDIR}/test.env" --active coverage run --data-file "$COVERAGEFILE" \
 		--source="reservations,party,waittime" \
 		"${BACKEND}/manage.py" migrate >> "$LOG" 2>&1
-    nohup uv run --active coverage run --data-file "$COVERAGEFILE" \
+    nohup uv run --env-file "${ROOTDIR}/test.env" --active coverage run --data-file "$COVERAGEFILE" \
 	  --source="backend" --append \
 	  "${BACKEND}/manage.py" \
 	  runserver --noreload --nothreading 0.0.0.0:8000 \
