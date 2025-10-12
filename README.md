@@ -24,7 +24,7 @@ Docker should be available, and there are several system packages which must be 
 # in one terminal - start the backend
 $ make local_backend_dev
 # in another terminal
-$ make frontend_dev - start the frontend
+$ make frontend_dev  # start the frontend
 # in yet another terminal
 $ make sample_data
 ```
