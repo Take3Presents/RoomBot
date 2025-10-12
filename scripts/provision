@@ -9,7 +9,7 @@ problems() {
 }
 
 usage() {
-    echo "provision <username> <hostname>"
+    echo "provision <username> <staging|production>"
     echo
     echo "this script will ensure a remote host is able to have the local artifacts"
     echo "deployed. it is safe to run multiple times."
@@ -19,7 +19,17 @@ usage() {
 [ $# == 2 ] || usage
 
 R_USER="$1"
-R_HOST="$2"
+R_ENV="$2"
 
-scp "${SCRIPTDIR}/provision-remote.sh" "${R_USER}@${R_HOST}:/tmp/provision.sh"
-ssh "${R_USER}@${R_HOST}" "sudo bash /tmp/provision.sh ; sudo rm /tmp/provision.sh"
+ENV_FILE="${ROOTDIR}/secrets/${R_ENV}.env"
+ENC_FILE="${ROOTDIR}/config/${R_ENV}.enc"
+
+[ -e "$ENV_FILE" ] && problems "plaintext secrets present"
+[ -e "$ENC_FILE" ] || problems "env file not found"
+
+"${SCRIPTDIR}/secrets" decrypt "$R_ENV"
+# shellcheck disable=1090
+source "$ENV_FILE"
+
+scp "${SCRIPTDIR}/provision-remote.sh" "${R_USER}@${ROOMBAHT_HOST}:/tmp/provision.sh"
+ssh "${R_USER}@${ROOMBAHT_HOST}" "sudo bash /tmp/provision.sh ; sudo rm /tmp/provision.sh"

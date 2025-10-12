@@ -6,7 +6,7 @@ resource "aws_network_interface" "roombaht" {
   description = "${var.environment} roombaht"
   tags = {
     "Name" = "${var.environment} roombaht"
-    "repo" = "Index01/RoomBot"
+    "repo" = "Take3Presents/RoomBot"
   }
 }
 
@@ -15,7 +15,7 @@ resource "aws_eip" "roombaht" {
   domain = "vpc"
   tags = {
     "Name" = "${var.environment} roombaht"
-    "repo" = "Index01/RoomBot"
+    "repo" = "Take3Presents/RoomBot"
   }
 }
 
@@ -24,7 +24,7 @@ resource "aws_instance" "roombaht" {
   instance_type = "t2.medium"
   iam_instance_profile = var.iam_profile
   key_name = "roombaht"
-  availability_zone = "${data.aws_region.roombaht.name}${var.availability_zone}"
+  availability_zone = "${data.aws_region.roombaht.region}${var.availability_zone}"
 
   network_interface {
     network_interface_id = aws_network_interface.roombaht.id
@@ -38,11 +38,11 @@ resource "aws_instance" "roombaht" {
     volume_type = "gp2"
     tags = {
       "Name" = "${var.environment} roombaht root"
-      "repo" = "Index01/RoomBot"
+      "repo" = "Take3Presents/RoomBot"
     }
   }
   tags = {
     "Name" = "${var.environment} roombaht"
-    "repo" = "Index01/RoomBot"
+    "repo" = "Take3Presents/RoomBot"
   }
 }

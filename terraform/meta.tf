@@ -34,6 +34,24 @@ variable "ami_id" {
   default = "ami-0b8c6b923777519db"
 }
 
+variable "postgres_version" {
+  type = string
+  description = "Version of PostgreSQL to install on RDS"
+  default = "16.8"
+}
+
+variable "staging" {
+  type = bool
+  description = "Whether or not to enable staging environment"
+  default = true
+}
+
+variable "production" {
+  type = bool
+  description = "Whether or not to enable production environment"
+  default = false
+}
+
 output "nameservers" {
   value = aws_route53_zone.roombaht.name_servers
 }
