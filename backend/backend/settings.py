@@ -90,12 +90,23 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+_DEV_SQLITE_CONFIG = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': os.path.join(BASE_DIR, os.environ.get('ROOMBAHT_SQLITE', 'db.sqlite3'))
+}
+
+_DEV_POSTGRES_CONFIG = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': os.environ.get('POSTGRES_DB'),
+    'USER': os.environ.get('POSTGRES_USER'),
+    'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+    'HOST': os.environ.get('POSTGRES_HOST', 'db'),
+    'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+}
+
 if DEV_MODE:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, os.environ.get('ROOMBAHT_SQLITE', 'db.sqlite3'))
-        }
+        'default': _DEV_POSTGRES_CONFIG if os.environ.get('POSTGRES_DB') else _DEV_SQLITE_CONFIG
     }
 else:
     DATABASES = {

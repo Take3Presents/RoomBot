@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/usr/src/app
+    env_file:
+      - docker-dev.env
+    depends_on:
+      - db
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/usr/src/app
+    # The backend-test service runs tests inside itself so it
+    # does not need to expose any ports
+    env_file:
+      - docker-test.env
+    depends_on:
+      - db
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile-compose
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend:/app
+    command: /app/scripts/entrypoint-compose.sh
+    depends_on:
+      - backend
+  db:
+    image: postgres:16.4-alpine3.20
+    ports:
+      - 5432:5432
+    volumes:
+      - ./.dev-data/roombaht-postgres:/var/lib/postgresql/data
+    env_file:
+      - docker-dev.env

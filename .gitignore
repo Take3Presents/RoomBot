@@ -1,6 +1,7 @@
 # Manually Entered
 output/*
 !output/.gitkeep
+.dev-data/
 secrets/
 .secret
 frontend/.env.production

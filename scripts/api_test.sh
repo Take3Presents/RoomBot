@@ -33,7 +33,7 @@ init() {
 }
 
 manage() {
-    "${ROOTDIR}/backend/venv/bin/coverage" \
+    "${ROOTDIR}/backend/.venv/bin/coverage" \
 	run -a "${ROOTDIR}/backend/manage.py" $*
 }
 
@@ -51,16 +51,16 @@ run() {
     # we want to test cli tools
     source "${ROOTDIR}/test.env"
 
-    manage room_list &>> "$LOG"
-    manage room_list -t Queen &>> "$LOG"
-    manage room_show --hotel ballys 503 &>> "$LOG"
-    manage user_show testadmin@example.com &>> "$LOG"
-    manage user_show testuser1@example.com &>> "$LOG"
-    manage check --deploy &>> "$LOG"
+    manage room_list >> "$LOG" 2>&1
+    manage room_list -t Queen >> "$LOG" 2>&1
+    manage room_show --hotel ballys 503 >> "$LOG" 2>&1
+    manage user_show testadmin@example.com >> "$LOG" 2>&1
+    manage user_show testuser1@example.com >> "$LOG" 2>&1
+    manage check --deploy >> "$LOG" 2>&1
 
     # then run tests following typical import data flow
-    "${SCRIPTDIR}/manage_dev" flush --noinput &>> "$LOG"
-    "${SCRIPTDIR}/manage_dev" migrate &>> "$LOG"
+    "${SCRIPTDIR}/manage_dev" flush --noinput >> "$LOG" 2>&1
+    "${SCRIPTDIR}/manage_dev" migrate >> "$LOG" 2>&1
     manage create_staff "${ROOTDIR}/samples/exampleMainStaffList.csv"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleBallysRoomList.csv" \
@@ -73,11 +73,11 @@ run() {
 
     "${SCRIPTDIR}/manage_dev" loaddata test_users
     "$TAVERN" backend/tavern/test_guests.tavern.yml
-    manage room_list &>> "$LOG"
-    manage room_list -t Queen &>> "$LOG"
-    manage room_show --hotel ballys 400 &>> "$LOG"
-    manage room_show --hotel nugget 110 &>> "$LOG"
-    manage check --deploy &>> "$LOG"
+    manage room_list >> "$LOG" 2>&1
+    manage room_list -t Queen >> "$LOG" 2>&1
+    manage room_show --hotel ballys 400 >> "$LOG" 2>&1
+    manage room_show --hotel nugget 110 >> "$LOG" 2>&1
+    manage check --deploy >> "$LOG" 2>&1
 
     SUCCESS="yea girl"
 }
@@ -85,7 +85,7 @@ run() {
 SQLITE="${ROOTDIR}/backend/test.sqlite"
 export PYTHONPATH="${ROOTDIR}/backend/tavern"
 export ROOTDIR
-TAVERN="${ROOTDIR}/backend/venv/bin/tavern-ci"
+TAVERN="${ROOTDIR}/backend/.venv/bin/tavern-ci"
 LOG="${ROOTDIR}/test.log"
 
 if [ -e "$SQLITE" ] ; then

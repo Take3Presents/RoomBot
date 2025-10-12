@@ -1,0 +1,19 @@
+FROM node:16-alpine
+
+ENV REACT_APP_API_ENDPOINT=http://localhost:8080
+
+RUN mkdir /.npm
+RUN chown node:node /.npm
+
+RUN mkdir /app
+RUN chown node:node /app
+
+USER node
+
+WORKDIR /.npm
+COPY package.json package-lock.json ./
+RUN npm ci
+
+WORKDIR /app
+
+ENTRYPOINT ["/bin/sh"]

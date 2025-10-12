@@ -22,7 +22,7 @@ Docker should be available, and there are several system packages which must be 
 
 ```sh
 # in one terminal - start the backend
-$ make backend_dev
+$ make local_backend_dev
 # in another terminal
 $ make frontend_dev - start the frontend
 # in yet another terminal
@@ -71,8 +71,8 @@ Configuration is handled through environment variables, which are stored encrypt
 ## Requirements
 
 * `make` (a classic)
-* Docker configured in a way that networking and files work
-* python 3.8 w/`virtualenv`
+* Docker configured in a way that networking and local file access works
+* Minimum of Python 3.10 with `virtualenv` and `uv`
 * A variety of "system packages" (note package names may vary on non-Linux)
   * `build-essential`
   * `imagemagik`
@@ -92,16 +92,16 @@ This should build a docker image, use it to generate the react static, and then 
 
 ## Backend
 
-To configure and run the local development server, simply invoke the `backend_dev` target. This will ensure you have a properly configured virtualenv, load the default [dev configuration](https://github.com/Index01/RoomBot/blob/main/dev.env), run migrations, and start the server. If it works, you will have an API server running on port `8000`.
+To configure and run the local development server, simply invoke the `local_backend_dev` target. This will ensure you have a properly configured virtualenv, load the default [dev configuration](https://github.com/Index01/RoomBot/blob/main/dev.env), run migrations, and start the server. If it works, you will have an API server running on port `8000`.
 
 ```sh
-$ make backend_dev
+$ make local_backend_dev
 ```
 
 You may (optionally) specify a different configuration file when testing locally. This can be done by setting `ROOMBAHT_CONFIG` to the full path of a configuration file.
 
 ```sh
-$ ROOMBAHT_CONFIG=/path/to/my/special.env make backend_dev
+$ ROOMBAHT_CONFIG=/path/to/my/special.env make local_backend_dev
 ```
 
  As part of the startup, the full configuration will be shown, so you can confirm the right file was loaded.

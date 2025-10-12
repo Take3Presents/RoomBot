@@ -34,7 +34,7 @@ if [ $# == 1 ] ; then
     fi
     shift
 else
-    "${ROOTDIR}/backend/venv/bin/gdown" -O "$TMPDIR" --folder "$FOLDER"
+    "${ROOTDIR}/backend/.venv/bin/gdown" -O "$TMPDIR" --folder "$FOLDER"
     if [ "$(ls -l "$TMPDIR" | wc -l)" == 0 ] ; then
 	problems "Nothing downloaded??"
     fi
