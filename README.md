@@ -5,10 +5,57 @@ Facilitates participants trading accomodations and answering the critical questi
 
 ![alt text](samples/roombot.png?raw=true)
 
+The RoomBot service allows guests to view which rooms they are assigned, and issue swap requests with other users. A lazy (time-boxed and out of band from this service) authentication process is used to validate room transfers. Some administrative functionality is available primarily in the form of reports.
+
 # Built With
 
 * Django is good at managing relations and providing an api for controlling models. Used for the Room and Guest API model.
 * React is good at consuming stuffs and making things look good while they flossing.
+
+# Quickstart
+
+Additional details on these steps are available in this document.
+
+## Local Development
+
+Docker should be available, and there are several system packages which must be installed (see [Requirements](#Requirements) section below).
+
+```sh
+# in one terminal - start the backend
+$ make local_backend_dev
+# in another terminal
+$ make frontend_dev  # start the frontend
+# in yet another terminal
+$ make sample_data
+```
+
+At this point, the local environment will be live at `http://localhost:3000/` and login with one of the sample credentials from [`exampleMainStaffList.csv`](samples/exampleMainStaffList.csv). The example guest lists can now be uploaded at `http://localhost:3000/admin/`.
+
+## AWS Deployment
+
+These instructions are for staging, however production is quite similar.
+
+```sh
+$ cd terraform
+$ terraform plan
+# review for unexpected changes. if this is start of the season, rds and staging
+#   and assorted policies and dns should be marked for creation
+$ terraform apply -auto-approve
+# we only use the "ubuntu" user on first run
+$ ./scripts/roombaht_ctl ubuntu staging provision
+$ make archive
+$ ./scripts/roombaht_ctl my_user staging deploy
+```
+
+The next set of commands will depend on which environment you are using. For this example, we will be loading sample data into staging.
+
+```sh
+$ ./scripts/roombaht_ctl my_user staging load_staff samples/exampleMainStaffList.csv
+$ ./scripts/roombaht_ctl my_user staging load_rooms ballys samples/exampleBallysRoomList.csv
+$ ./scripts/roombaht_ctl my_user staging load_rooms nugget samples/exampleNuggetRoomList.csv
+```
+
+At this point, the interface will be live, and admins may upload (sample) guest lists.
 
 # Environment / Configuration
 
@@ -24,8 +71,8 @@ Configuration is handled through environment variables, which are stored encrypt
 ## Requirements
 
 * `make` (a classic)
-* Docker configured in a way that networking and files work
-* python 3.8 w/`virtualenv`
+* Docker configured in a way that networking and local file access works
+* Minimum of Python 3.10 with `virtualenv` and `uv`
 * A variety of "system packages" (note package names may vary on non-Linux)
   * `build-essential`
   * `imagemagik`
@@ -45,36 +92,56 @@ This should build a docker image, use it to generate the react static, and then 
 
 ## Backend
 
-To configure and run the local development server, simply invoke the `backend_dev` target. This will ensure you have a properly configured virtualenv, load the default [dev configuration](https://github.com/Index01/RoomBot/blob/main/dev.env), run migrations, and start the server. If it works, you will have an API server running on port `8000`.
+To configure and run the local development server, simply invoke the `local_backend_dev` target. This will ensure you have a properly configured virtualenv, load the default [dev configuration](https://github.com/Index01/RoomBot/blob/main/dev.env), run migrations, and start the server. If it works, you will have an API server running on port `8000`.
 
 ```sh
-$ make backend_dev
+$ make local_backend_dev
 ```
 
 You may (optionally) specify a different configuration file when testing locally. This can be done by setting `ROOMBAHT_CONFIG` to the full path of a configuration file.
 
 ```sh
-$ ROOMBAHT_CONFIG=/path/to/my/special.env make backend_dev
+$ ROOMBAHT_CONFIG=/path/to/my/special.env make local_backend_dev
 ```
 
  As part of the startup, the full configuration will be shown, so you can confirm the right file was loaded.
 
 ## Local Data Management
 
-Local development also requires sample data. You may rapidly get up and running by leveraging our sample data. This will leverage a variety of the django management commands (see below).
-
-```sh
-# in one terminal
-$ make backend_dev
-# in another terminal
-$ make sample_data
-```
+Local development also requires sample data. You may rapidly get up and running by leveraging our sample data. This will leverage a variety of the django management commands (see below). Sample data may be initially loaded via the `sample_data` make target. Local data may otherwise be interacted with via the djano management interface.
 
 To get a guest password, you can use a Django management command. First, already have a running backend.
 ```sh
 $ python backend/manage.py user_show name@noop.com
 User Foo Bar, otp: SomeOtp, last login: never
     rooms: 305, tickets: aaa001, onboarding sent: yes
+```
+
+# Infrastructure
+
+## AWS
+
+The system is hosted in AWS and is managed via [terraform](https://developer.hashicorp.com/terraform). Please contact an adult for an AWS account and access to the EC2 ssh key. Any reasonably recent version of terraform will probably be fine. There are only three variables that should need changing. The `ami_id` cariable can be used to explicitly set a base AMI, and `postgres_version` is used to set the version installed in RDS. The `staging` and `production` variables can be set to `true` or `false` and control the existence of that environment. The RDS instance will be created if at least one of these is present, and removed if none of them are present.
+
+Begin an infrastructure update by issuing a Terraform "plan". This will provide an indication of what is expected to change. Terraform should only issue changes to resources which have been modified in `.tf` files, along with any dependencies of those resources. Note that resources _may_ change outside of Terraform - installed PostgreSQL version in RDS is one example. When these are encountered, update the version in `meta.tf`.
+
+```sh
+$ cd terraform
+$ terraform plan
+```
+
+If there is nothing unexpected being reported, the `apply` command is used to make the changes. You will be asked to confirm, based on a new plan.
+
+```sh
+$ terraform apply
+```
+
+## Initial / Baseline Host Configuration
+
+Provisioning a deployed must occur before any other interactions. The `provision` functionality expects the existence of Ubuntu 20.04 server edition. This script is to be run when a host is first created and when any baseline non-application changes are desired. It will execute [`./scripts/provision-remote.sh`](https://github.com/Index01/RoomBot/blob/main/scripts/provision-remote.sh) on the remote host. Note that the _first_ time this command is run, the `ubuntu` user must be used, and the EC2 ssh private key must be available. All subsequent interactions with the deployed host must be through a normal user. SSH keys for users are pulled from GitHub.
+
+```sh
+$ `./scripts/roombaht_ctl ubuntu <env> provision
 ```
 
 # Managing a Real Host
@@ -85,23 +152,16 @@ There are a variety of scripts used for managing either the production (`prod`) 
 $ ./scripts/roombaht_ctl <user> <env> <command> <arg1> <arg2> ....
 ```
 
-## Initial / Baseline Host Configuration
-
-The `provision` script expects the existence of Ubuntu 20.04 server edition. This script is to be run when a host is first created and when any baseline non-application changes are desired. It will execute [`./scripts/provision-remote.sh`](https://github.com/Index01/RoomBot/blob/main/scripts/provision-remote.sh) on the remote host.
-
-```sh
-$ `./scripts/provision <user> <host>
-```
-
 ## Deployment
 
-The `deploy` script will handle deployment to either the production (`prod`) or staging/dev (`staging`) environments. It handles the creation of artifacts, shipping and installing the artifacts, and configuring the remote host, database migrations, and other things needed for a running `roombaht` instance. The deployment script will ask for manual confirmation if you are deploying from a branch other than `main` or if the local git repository is dirty. You may bypass the confirmation by passing the `-f` option. But you shouldn't.
+The `deploy` script will handle deployment to either the production (`prod`) or staging/dev (`staging`) environments. It handles the creation of artifacts, shipping and installing the artifacts, and configuring the remote host, database migrations, and other things needed for a running `roombaht` instance. The deployment script will ask for manual confirmation if you are deploying from a branch other than `main` or if the local git repository is dirty. You may bypass the confirmation by passing the `-f` option. But you shouldn't. You must locally build artifacts prior to deployment.
 
 ```sh
+$ make archive
 $ ./scripts/deploy <user> <env>
 ```
 
-You may optionally execute a "quick" deployment. This skips the management of the virtualenv, database migrations, and the nginx configuration. Good for emergency fixes. Use with care.
+You may optionally execute a "quick" deployment. This skips the management of the virtualenv, database migrations, and the nginx configuration. Good for emergency fixes. Use with care. This may only be done after a "full" deployment has succesfully completed.
 
 ```sh
 $ ./scripts/deploy <user> <env> -q
@@ -254,6 +314,8 @@ $ ./scripts/roombaht_ctl <user> <env> manage shell
 
 # Configuration Settings
 
+The `ROOMBAHT_DB_HOST` and `ROOMBAHT_DB_PASSWORD` configuration variables are only used in AWS environments, and they are automatically determined based on the RDS deployment.
+
 * `ROOMBAHT_DEV` Should be set to `true` on dev and never on prod. Controls DB usage and enables some local dev functionality. Defaults to `false`.
 * `ROOMBAHT_DEV_MAIL` if this is set to an email address then any address for the `@noop.com` domain will be converted to be a prefix email. Example `foo@gmail.com` and `bar@noop.com` would convert to `foo+bar@gmail.com`. Helpful for testing room swaps. Defaults to disabled.
 * `ROOMBAHT_SEND_MAIL` Needs to be set to `true` for email to be sent. Defaults to `false`.
@@ -266,8 +328,6 @@ $ ./scripts/roombaht_ctl <user> <env> manage shell
 * `ROOMBAHT_IGNORE_TRANSACTIONS` This is a CSV list of transactionts to not care about.
 * `ROOMBAHT_JWT_KEY` is basically the salt for o ur auth tokens. This must be set, there is no default.
 * `ROOMBAHT_DJANGO_SECRET_KEY` Might not even be used since we don't use Django sessions?
-* `ROOMBAHT_DB_PASSWORD` This is the postgres password for production. This must be set, there is no default.
-* `ROOMBAHT_DB_HOST` This is the postgres hostname for production. This must be set, there is no default.
 * `ROOMBAHT_EMAIL_HOST_USER` This is the SMTP user and it must be set, there is no default.
 * `ROOMBAHT_EMAIL_HOST_PASSWORD` This is the SMTP password and it must be set, there is no default.
 * `ROOMBAHT_SWAPS_ENABLED` Is a boolean which controls whether swaps are enabled or not. Defaults to `True`.

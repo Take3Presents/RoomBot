@@ -158,6 +158,9 @@ elif [ "$ACTION" == "deploy" ] || [ "$ACTION" == "quick_deploy" ] ; then
 elif [ "$ACTION" == "manage" ] ; then
     yeet_script
     yeet_ctl "manage $*"
+elif [ "$ACTION" == "provision" ] ; then
+    yeet_file "${SCRIPTDIR}/provision-remote.sh"
+    yeet_command "sudo bash /tmp/provision-remote.sh ; sudo rm /tmp/provision-remote.sh"
 elif [ "$ACTION" == "help" ] ; then
     usage
 else

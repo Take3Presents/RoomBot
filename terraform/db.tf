@@ -6,13 +6,13 @@ resource "aws_db_subnet_group" "roombaht" {
   ]
   tags = {
     "Name" = "roombaht"
-    "repo" = "Index01/RoomBot"
+    "repo" = "Take3Presents/RoomBot"
   }
 }
 
- resource "aws_db_instance" "roombaht" {
+resource "aws_db_instance" "roombaht" {
   engine = "postgres"
-  engine_version = "16.4"
+  engine_version = var.postgres_version
   identifier = "roombaht"
   allocated_storage = 20
   instance_class = "db.t3.small"
@@ -27,13 +27,14 @@ resource "aws_db_subnet_group" "roombaht" {
   backup_target = "region"
   delete_automated_backups = true
   skip_final_snapshot = true
-  availability_zone = "${data.aws_region.roombaht.name}${var.availability_zone}"
+  availability_zone = "${data.aws_region.roombaht.region}${var.availability_zone}"
   db_subnet_group_name = aws_db_subnet_group.roombaht.name
   vpc_security_group_ids = [
     aws_security_group.db.id
   ]
   tags = {
     "Name" = "roombaht data tho"
-    "repo" = "Index01/RoomBot"
+    "repo" = "Take3Presents/RoomBot"
   }
- }
+  count = (var.production || var.staging) ? 1 : 0
+}

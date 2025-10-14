@@ -207,6 +207,14 @@ nginx_config() {
     systemctl reload nginx
 }
 
+env_check() {
+    if [ ! -d "/opt/roombaht-backend" ] ; then
+	problems "roombaht backend has not yet been deployed"
+    elif [ ! -d "/opt/roombaht-frontend" ] ; then
+	problems "roombaht frontend has not yet been deployed"
+    fi
+}
+
 [ -e "$ENV_FILE" ] || problems "unable to find env file"
 
 trap cleanup EXIT
@@ -220,6 +228,7 @@ source "$ENV_FILE"
 if [ "$ACTION" == "load_staff" ] ; then
     STAFF_FILE="/tmp/${1}"
     shift
+    env_check
     if [ ! -e "$STAFF_FILE" ] ; then
 	problems "Unable to load staff from ${STAFF_FILE}"
     fi
@@ -229,6 +238,7 @@ elif [ "$ACTION" == "load_rooms" ] ; then
     HOTEL="$1"
     ROOM_FILE="/tmp/${2}"
     shift
+    env_check
     if [ ! -e "$ROOM_FILE" ] ; then
 	problems "Unable to load rooms from ${ROOM_FILE}"
     fi
@@ -262,6 +272,7 @@ elif [ "$ACTION" == "snapshot" ] ; then
     db_connection
     db_snapshot
 elif [ "$ACTION" == "manage" ] ; then
+    env_check
     "/opt/roombaht-backend/venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" $*
 elif [ "$ACTION" == "deploy" ] ; then
@@ -273,6 +284,7 @@ elif [ "$ACTION" == "deploy" ] ; then
     db_migrate
     nginx_config
 elif [ "$ACTION" == "quick_deploy" ] ; then
+    env_check
     backend_deploy
     backend_config
     frontend_deploy

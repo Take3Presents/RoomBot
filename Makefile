@@ -4,7 +4,7 @@
 	local_backend_clean_data frontend_clean backend_distclean
 
 # generates the frontend static content
-frontend_build: local_backend_env
+frontend_build:
 #	test -d frontend/public/layouts || ./scripts/fetch-images
 	docker build -t roombaht:latest frontend/
 	docker run -u node \

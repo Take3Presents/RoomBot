@@ -4,16 +4,17 @@ resource "aws_iam_policy" "roombaht" {
   policy = templatefile("${path.module}/templates/roombaht.json",
     {
       key_id = aws_kms_key.roombaht.arn
-      secret_id = aws_db_instance.roombaht.master_user_secret[0].secret_arn
+      secret_id = aws_db_instance.roombaht[0].master_user_secret[0].secret_arn
     })
   tags = {
     "Name" = "roombaht host access"
-    "repo" = "Index01/RoomBot"
+    "repo" = "Take3Presents/RoomBot"
   }
   depends_on = [
     aws_db_instance.roombaht,
     aws_kms_key.roombaht
   ]
+  count = (var.production || var.staging) ? 1 : 0
 }
 
 resource "aws_kms_key" "roombaht" {
@@ -28,7 +29,8 @@ resource "aws_iam_role" "roombaht" {
 
 resource "aws_iam_role_policy_attachment" "roombaht" {
   role = aws_iam_role.roombaht.name
-  policy_arn = aws_iam_policy.roombaht.arn
+  policy_arn = aws_iam_policy.roombaht[0].arn
+  count = (var.production || var.staging) ? 1 : 0
 }
 
 resource "aws_iam_instance_profile" "roombaht" {
