@@ -61,8 +61,11 @@ os_freshen
 
 add_user gadget otakup0pe
 add_user index Index01
+add_user cubes cubes
+
 add_user roombaht
 lock_user ubuntu
 
 sudo_user gadget
 sudo_user index
+sudo_user cubes
