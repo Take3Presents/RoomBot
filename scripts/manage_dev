@@ -15,5 +15,5 @@ else
 fi
 source "$ROOMBAHT_CONFIG"
 
-uv run --python "${ROOTDIR}/backend/.venv" \
+"${ROOTDIR}/backend/.venv/bin/python" \
     "${ROOTDIR}/backend/manage.py" "$@"
