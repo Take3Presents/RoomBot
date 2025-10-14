@@ -1,0 +1,17 @@
+GN Room Type Code,SP Asset Names,GN Room Type Name,Notes
+KS,"11.1 Nugget - Sunset King
+11.2 Nugget - Sunset King (DTS)",Standard King,
+KB,"12.1 Nugget - Sunset Balcony King
+12.2 Nugget - Sunset Balcony King (DTS)",King Balcony,
+KLV,"13.1 Nugget - Sunset Lakeview King
+13.2 Nugget - Sunset Lakeview King (DTS)",King Lakeview,
+KLVB,"13.1 Nugget - Sunset Lakeview King
+13.2 Nugget - Sunset Lakeview King (DTS)",King Lakeview Balcony,only 1 of these - sold as KLV
+QQS,"14.1 Nugget - Sunset 2 Queen
+14.2 Nugget - Sunset 2 Queen (DTS)",Standard Double Queen,
+QQLV,"15.1 Nugget - Sunset Lakeview 2 Queen
+15.2 Nugget - Sunset Lakeview 2 Queen (DTS)",Double Queen Lakeview,
+SSK,"16.1 Nugget - Sunset King Suite
+16.2 Nugget - Sunset King Suite (DTS)",Sunset King Suite,
+SPOOL,"16.1 Nugget - Sunset King Suite
+16.2 Nugget - Sunset King Suite (DTS)""",Sunset King Suite w/pool patio,only 1 of these - sold as SSK

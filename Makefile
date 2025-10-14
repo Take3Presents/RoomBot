@@ -59,8 +59,11 @@ local_backend_dev: local_backend_env
 	./scripts/start_backend_dev.sh
 
 # tests are cool
-local_backend_tests: local_backend_env
+local_backend_integration_tests: local_backend_env
 	./scripts/api_test.sh
+
+local_backend_unit_tests: local_backend_env
+	./scripts/unit_test.sh
 
 # automagically generate django migrations
 local_backend_migrations: local_backend_env
