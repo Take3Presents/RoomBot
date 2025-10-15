@@ -105,8 +105,10 @@ backend_venv() {
 	sudo -u roombaht -- cp -r "${LAST_DEPLOY}/venv" "${BACKEND_DIR}/"
 	chown -R roombaht: "${BACKEND_DIR}/venv"
     fi
-    sudo -u roombaht -- bash -c "test -d ${BACKEND_DIR}/venv || ( mkdir ${BACKEND_DIR}/venv && virtualenv -p python3 ${BACKEND_DIR}/venv ) && ${BACKEND_DIR}/venv/bin/python3 -m pip install --upgrade pip"
-    sudo -u roombaht -- bash -c "${BACKEND_DIR}/venv/bin/pip install -r ${BACKEND_DIR}/requirements.txt --upgrade"
+    VENV_PATH="${BACKEND_DIR}/venv"
+    sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && rm -rf ${VENV_PATH} && uv venv ${VENV_PATH} --seed"
+    sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && . ${VENV_PATH}/bin/activate && uv pip install --upgrade pip setuptools wheel"
+    sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && . ${VENV_PATH}/bin/activate && uv pip install -e ."
 }
 
 backend_deploy() {
@@ -119,9 +121,6 @@ backend_deploy() {
 	done
     fi
     tar -C "/opt" -xzvf "$BACKEND_ARTIFACT"
-    if [ -d "${BACKEND_OLD}/venv" ] ; then
-	cp -r "${BACKEND_OLD}/venv" "${BACKEND_DIR}/venv"
-    fi
     chown -R roombaht: "$BACKEND_DIR"
     chmod -R o-rwx "$BACKEND_DIR"
 }
