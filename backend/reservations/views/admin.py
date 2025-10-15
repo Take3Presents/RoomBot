@@ -303,7 +303,7 @@ def guest_update(guest_obj, otp, room, og_guest=None):
                      email, room.name_hotel, room.number, room.name_take3)
         guest_changed = True
 
-    if room.name_hotel == 'Ballys':
+    if room.name_hotel in roombaht_config.GUEST_HOTELS:
         guest.can_login = True
         guest_changed = True
 

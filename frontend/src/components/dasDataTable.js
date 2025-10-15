@@ -32,6 +32,7 @@ export default class RoomDataTable extends React.Component {
     sortColumn: "number", // default column to sort by
     sortDirection: "asc", // default sort direction,
     swaps_enabled: true,
+    guest_hotels: [],
     refreshTimer: null
   }
 
@@ -52,8 +53,8 @@ export default class RoomDataTable extends React.Component {
     });
   };
 
-  storyHeaderFactory(swaps_enabled) {
-    let STORY_HEADERS: TableColumnType<ArrayElementType>[] = [
+  storyHeaderFactory(swaps_enabled, guest_hotels) {
+    var roomTable = [
       {
         prop: "number",
         title: "Number",
@@ -69,11 +70,13 @@ export default class RoomDataTable extends React.Component {
         prop: "floorplan",
         title: "FloorPlan",
         cell: (row) => (
-          <ModalImage
-            small={"layouts/" + row.floorplans[1]}
-            large={"layouts/" + row.floorplans[0]}
-            alt="Hotel Floor Plan"
-          />
+	  row.floorplans && (
+            <ModalImage
+              small={"layouts/" + row.floorplans[1]}
+              large={"layouts/" + row.floorplans[0]}
+              alt="Hotel Floor Plan"
+            />
+	  )
         )
       },
       {
@@ -86,6 +89,16 @@ export default class RoomDataTable extends React.Component {
         )
       }
     ];
+    if (guest_hotels && guest_hotels.length > 1) {
+      roomTable.unshift({
+        prop: "name_hotel",
+        title: "Hotel",
+        isSortable: true,
+        isFilterable: true
+      });
+    }
+
+    let STORY_HEADERS: TableColumnType<ArrayElementType>[] = roomTable;
     // handle column header clicks
     STORY_HEADERS[0].onHeaderClick = () => {
       this.setState(
@@ -119,7 +132,8 @@ export default class RoomDataTable extends React.Component {
         }));
         this.setState({
           rooms: roomsWithIntegers,
-          swaps_enabled: data.swaps_enabled
+          swaps_enabled: data.swaps_enabled,
+	  guest_hotels: data.guest_hotels
         }, this.sortData0);
       })
       .catch((error) => {
@@ -148,7 +162,7 @@ export default class RoomDataTable extends React.Component {
       <SwapStatus enabled={this.state.swaps_enabled} />
       <DatatableWrapper
         body={this.state.rooms}
-        headers={this.storyHeaderFactory(this.state.swaps_enabled)}
+        headers={this.storyHeaderFactory(this.state.swaps_enabled, this.state.guest_hotels)}
         paginationOptionsProps={{
           initialState: {
             rowsPerPage: 10,
