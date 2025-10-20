@@ -12,7 +12,7 @@ dependencies = [
     "bpython==0.23",
     "certifi==2022.9.24",
     "charset-normalizer==2.1.1",
-    "curtsies==0.4.0",
+    "curtsies==0.4.3",
     "cwcwidth==0.1.7",
     "django==4.1.1",
     "django-cors-headers==3.13.0",
@@ -21,7 +21,6 @@ dependencies = [
     "djangorestframework-simplejwt==5.2.1",
     "ec2-metadata==2.13.0",
     "fuzzywuzzy==0.18.0",
-    "greenlet==1.1.3",
     "idna==3.4",
     "ipython>=8.37.0",
     "jinja2==3.1.4",
@@ -52,9 +51,12 @@ dev = [
     "lorem-text==2.1",
     "names-generator==0.1.0",
     "pyyaml==6.0.2",
-    "tavern==2.11.0",
+    "tavern==2.11.0"
 ]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "backend.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.setuptools]
+py-modules = ['party', 'waittime', 'reservations']
