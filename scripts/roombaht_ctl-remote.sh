@@ -93,22 +93,22 @@ db_migrate() {
 	createdb -h "$ROOMBAHT_DB_HOST" -U root "$ROOMBAHT_DB"
     fi
     systemctl stop roombaht
-    "/opt/roombaht-backend/venv/bin/python3" \
+    "/opt/roombaht-backend/.venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" migrate
     systemctl start roombaht
 }
 
 backend_venv() {
     LAST_DEPLOY="$(find /opt -name 'roombaht-backend-*' -type d | sort | tail -n 1)"
-    if [ -d "${LAST_DEPLOY}/venv" ] ; then
-	find "${LAST_DEPLOY}/venv" -name \*.pyc | xargs --no-run-if-empty rm
-	sudo -u roombaht -- cp -r "${LAST_DEPLOY}/venv" "${BACKEND_DIR}/"
-	chown -R roombaht: "${BACKEND_DIR}/venv"
+    if [ -d "${LAST_DEPLOY}/.venv" ] ; then
+	find "${LAST_DEPLOY}/.venv" -name \*.pyc | xargs --no-run-if-empty rm
+	sudo -u roombaht -- cp -r "${LAST_DEPLOY}/.venv" "${BACKEND_DIR}/"
+	chown -R roombaht: "${BACKEND_DIR}/.venv"
     fi
-    VENV_PATH="${BACKEND_DIR}/venv"
+    VENV_PATH="${BACKEND_DIR}/.venv"
     sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && rm -rf ${VENV_PATH} && uv venv ${VENV_PATH} --seed"
     sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && . ${VENV_PATH}/bin/activate && uv pip install --upgrade pip setuptools wheel"
-    sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && . ${VENV_PATH}/bin/activate && uv pip install -e ."
+    sudo -u roombaht -- bash -c "cd ${BACKEND_DIR} && . ${VENV_PATH}/bin/activate && uv sync --frozen --project ${BACKEND_DIR}/pyproject.toml --python $(cat "${BACKEND_DIR}/.python-version")"
 }
 
 backend_deploy() {
@@ -231,7 +231,7 @@ if [ "$ACTION" == "load_staff" ] ; then
     if [ ! -e "$STAFF_FILE" ] ; then
 	problems "Unable to load staff from ${STAFF_FILE}"
     fi
-    "/opt/roombaht-backend/venv/bin/python3" \
+    "/opt/roombaht-backend/.venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" "create_staff" "${STAFF_FILE}"
 elif [ "$ACTION" == "load_rooms" ] ; then
     HOTEL="$1"
@@ -242,7 +242,7 @@ elif [ "$ACTION" == "load_rooms" ] ; then
 	problems "Unable to load rooms from ${ROOM_FILE}"
     fi
     db_connection
-    "/opt/roombaht-backend/venv/bin/python3" \
+    "/opt/roombaht-backend/.venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" \
 	create_rooms "$ROOM_FILE" --hotel "$HOTEL" --preserve
 elif [ "$ACTION" == "clone_db" ] ; then
@@ -272,7 +272,7 @@ elif [ "$ACTION" == "snapshot" ] ; then
     db_snapshot
 elif [ "$ACTION" == "manage" ] ; then
     env_check
-    "/opt/roombaht-backend/venv/bin/python3" \
+    "/opt/roombaht-backend/.venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" $*
 elif [ "$ACTION" == "deploy" ] ; then
     frontend_deploy

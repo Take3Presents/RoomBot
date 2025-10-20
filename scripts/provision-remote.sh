@@ -70,7 +70,15 @@ python_freshen() {
     rm -rf "/tmp/${UV_ARCHIVE}" "/tmp/${UV_FILE}"
 
     # some pips
-    pip install --upgrade awscli
+    if ! uv tool list | grep -q aws ; then
+	uv tool install awscli
+    else
+	uv tool update awscli
+    fi
+
+    if ! grep -q uv ~/.bashrc ; then
+	uv tool update-shell
+    fi
 }
 
 os_freshen

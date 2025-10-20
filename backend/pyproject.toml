@@ -21,7 +21,6 @@ dependencies = [
     "djangorestframework-simplejwt==5.2.1",
     "ec2-metadata==2.13.0",
     "fuzzywuzzy==0.18.0",
-    "greenlet==3.0.3",
     "idna==3.4",
     "ipython>=8.37.0",
     "jinja2==3.1.4",
@@ -52,7 +51,7 @@ dev = [
     "lorem-text==2.1",
     "names-generator==0.1.0",
     "pyyaml==6.0.2",
-    "tavern==2.11.0",
+    "tavern==2.11.0"
 ]
 
 [tool.pytest.ini_options]
