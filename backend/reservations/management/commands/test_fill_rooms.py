@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
-    help='Fill empty rooms with admins. For testing only.'
+    help = 'Fill empty rooms with admins. For testing only.'
 
     def add_arguments(self, parser):
         parser.add_argument('--max-rooms',
@@ -21,13 +21,15 @@ class Command(BaseCommand):
                             default=False)
 
     def handle(self, *args, **kwargs):
+        # todo once we are happy with this script, replace "refuse" with
+        # "seek enthusiastic consent from user"
         if not settings.DEV_MODE:
             self.stdout.write("Refusing to run outside of dev mode")
             sys.exit(1)
 
-        free_rooms = Room.objects.filter(is_available = True)
+        free_rooms = Room.objects.filter(is_available=True)
         if kwargs['hotel_name'] != 'all':
-            free_rooms = free_rooms.filter(name_hotel = kwargs['hotel'])
+            free_rooms = free_rooms.filter(name_hotel=kwargs['hotel'])
 
         admins = Staff.objects.all()
 
