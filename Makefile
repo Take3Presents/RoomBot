@@ -1,7 +1,8 @@
 .PHONY = frontend_build frontend_dev frontend_archive frontend_clean \
 	local_backend_dev backend_archive backend_clean backend_migrations \
 	local_backend_env archive local_sample_data clean distclean \
-	local_backend_clean_data frontend_clean backend_distclean
+	local_backend_clean_data frontend_clean backend_distclean \
+	test
 
 # generates the frontend static content
 frontend_build:
@@ -17,6 +18,7 @@ backend_archive:
 	mkdir -p build && \
 	cp -r backend build/roombaht-backend && \
 	./scripts/version > build/roombaht-backend/reservations/version && \
+	cp .python-version build/roombaht-backend && \
 	tar -cvz \
 		-C build \
 		--exclude "__pycache__" \
@@ -87,3 +89,6 @@ frontend_clean:
 archive: backend_archive frontend_archive
 clean: local_backend_clean frontend_clean
 distclean: local_backend_distclean frontend_clean
+
+# testing shortcut
+test: local_backend_tests
