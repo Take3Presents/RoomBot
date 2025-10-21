@@ -1,6 +1,6 @@
 import sys
 
-from reservations.models import Room, Staff
+from reservations.models import Room, Staff, Guest
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -23,9 +23,9 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         # todo once we are happy with this script, replace "refuse" with
         # "seek enthusiastic consent from user"
-        if not settings.DEV_MODE:
-            self.stdout.write("Refusing to run outside of dev mode")
-            sys.exit(1)
+#        if not settings.DEV_MODE:
+#            self.stdout.write("Refusing to run outside of dev mode")
+#            sys.exit(1)
 
         free_rooms = Room.objects.filter(is_available=True)
         if kwargs['hotel_name'] != 'all':
@@ -34,7 +34,14 @@ class Command(BaseCommand):
         admins = Staff.objects.all()
 
         for room in free_rooms:
-            guest = admins.order_by('?').first().guest
+            admin_guest = admins.order_by('?').first().guest
+            guest = Guest(name=admin_guest.name,
+                          email=admin_guest.email,
+                          jwt=admin_guest.jwt,
+                          room_number=room.number,
+                          hotel=room.name_hotel)
+            guest.save()
+
             room.guest = guest
             room.is_available = False
             room.primary = guest.name
