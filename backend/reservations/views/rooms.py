@@ -38,7 +38,7 @@ def my_rooms(request):
         except IndexError:
             return Response("No guest or room found", status=status.HTTP_400_BAD_REQUEST)
 
-        rooms = Room.objects.filter(name_hotel__in=roombaht_config.GUEST_HOTELS)
+        rooms = Room.objects.filter(name_hotel__in=roombaht_config.VISIBLE_HOTELS)
         rooms_mine = [elem for elem in rooms if elem.guest is not None and elem.guest.email==email]
 
         data = {
@@ -46,13 +46,13 @@ def my_rooms(request):
                        "type": room.name_take3,
                        "swappable": room.swappable() and not room.cooldown(),
                        "cooldown": room.cooldown(),
-                       "hotel": room.hotel_name
+                       "name_hotel": room.name_hotel
                        } for room in rooms_mine],
             'swaps_enabled': roombaht_config.SWAPS_ENABLED,
-            'guest_hotels': roombaht_config.GUEST_HOTELS
+            'hotels': roombaht_config.VISIBLE_HOTELS
         }
 
-        logger.debug("rooms for user %s: %s", email, rooms_mine)
+        logger.debug("rooms for user %s: %s" % (email, rooms_mine))
         return Response(data)
 
 
@@ -71,7 +71,7 @@ def room_list(request):
         rooms = Room.objects \
                     .filter(is_available=False,
                             is_special=False,
-                            name_hotel__in=roombaht_config.GUEST_HOTELS) \
+                            name_hotel__in=roombaht_config.VISIBLE_HOTELS) \
                     .exclude(guest=None)
         guest_entries = Guest.objects.filter(email=email)
         room_types = []
@@ -80,7 +80,7 @@ def room_list(request):
                        if guest.room_number is not None]
         for guest_room_number in guest_room_numbers:
             try:
-                guest_room = Room.objects.get(number=guest_room_number, name_hotel__in=roombaht_config.GUEST_HOTELS)
+                guest_room = Room.objects.get(number=guest_room_number, name_hotel__in=roombaht_config.VISIBLE_HOTELS)
                 if guest_room.name_take3 not in room_types \
                    and guest_room.swappable() \
                    and not guest_room.cooldown():
@@ -96,7 +96,7 @@ def room_list(request):
         data = {
             'rooms': serializer.data,
             'swaps_enabled': roombaht_config.SWAPS_ENABLED,
-            'guest_hotels': roombaht_config.GUEST_HOTELS
+            'hotels': roombaht_config.GUEST_HOTELS
         }
 
         for room in data['rooms']:
@@ -164,22 +164,25 @@ def swap_request(request):
         except KeyError:
             return Response("missing fields", status=status.HTTP_400_BAD_REQUEST)
 
+        if name_hotel not in roombaht_config.VISIBLE_HOTELS:
+            return Response("Room is not swappable")
+
         requester_room_numbers = [x.room_number
                                   for x in Guest.objects.filter(email=requester_email,
                                                                 room_number__isnull=False)]
 
         swap_room = None
         try:
-            swap_room = Room.objects.get(number=room_num, name_hotel__in=roombaht_config.GUEST_HOTELS)
+            swap_room = Room.objects.get(number=room_num, name_hotel=name_hotel)
         except Room.DoesNotExist:
             return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
 
         if not swap_room.swappable():
-            return Response(f"Room {swap_room.number} is not swappable",
+            return Response(f"Room {swap_room} is not swappable",
                             status=status.HTTP_400_BAD_REQUEST)
 
         if swap_room.cooldown():
-            return Response(f"Room {swap_room.number} was swapped too recently",
+            return Response(f"Room {swap_room} was swapped too recently",
                             status=status.HTTP_400_BAD_REQUEST)
 
 
