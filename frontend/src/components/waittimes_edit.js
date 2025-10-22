@@ -23,7 +23,7 @@ export class WaittimeDelete extends React.Component {
       show: this.props.show,
       name: ''
     }
-    this.wait_url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.protocol == "https:" ? "8443" : "8000" +  "/api/wait/" + this.state.short_name + "/";
+    this.wait_url = window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/wait/" + this.state.short_name + "/";
     this.plzDelete = this.plzDelete.bind(this);
     this.startDelete = this.startDelete.bind(this);
     this.setPassword = this.setPassword.bind(this);
