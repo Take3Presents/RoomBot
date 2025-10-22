@@ -30,8 +30,8 @@ usage() {
     echo "roombaht_ctl <user> <env> deploy"
     echo "roombaht_ctl <user> <env> quick_deploy"
     echo "roombaht_ctl <user> <env> quick_deploy"
-    echo "roombaht_ctl <user> <env> create_rooms <hotel> <rooms dot csv>"
-    echo "roombaht_ctl <user> <env> create_staff <staff dot csv>"
+    echo "roombaht_ctl <user> <env> load_rooms <hotel> <rooms dot csv>"
+    echo "roombaht_ctl <user> <env> load_staff <staff dot csv>"
     echo "roombaht_ctl <user> <env> manage"
 }
 

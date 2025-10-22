@@ -1,6 +1,8 @@
+import os
 import sys
 
 from reservations.models import Room, Staff, Guest
+from reservations.management import confirm
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -21,11 +23,14 @@ class Command(BaseCommand):
                             default=False)
 
     def handle(self, *args, **kwargs):
-        # todo once we are happy with this script, replace "refuse" with
-        # "seek enthusiastic consent from user"
-#        if not settings.DEV_MODE:
-#            self.stdout.write("Refusing to run outside of dev mode")
-#            sys.exit(1)
+        if not settings.DEV_MODE:
+            if 'staging' not in os.environ.get('ROOMBAHT_HOST', 'localhost'):
+                self.stdout.write("Refusing to run in production")
+                sys.exit(1)
+
+            if not confirm("This will assign rooms to admins at random, simulating roombaht placement"):
+                self.stdout.write("User said no.")
+                sys.exit(1)
 
         free_rooms = Room.objects.filter(is_available=True)
         if kwargs['hotel_name'] != 'all':
