@@ -15,7 +15,8 @@ else
 fi
 source "$ROOMBAHT_CONFIG"
 
-"${SCRIPTDIR}/manage_dev" create_rooms "${ROOTDIR}/samples/exampleBallysRoomList.csv" --force
+"${SCRIPTDIR}/manage_dev" create_rooms "${ROOTDIR}/samples/exampleBallysRoomList.csv" \
+			  --force --preserve --hotel-name=ballys
 "${SCRIPTDIR}/manage_dev" create_rooms "${ROOTDIR}/samples/exampleNuggetRoomList.csv" \
 			  --force --preserve --hotel-name=nugget
 "${SCRIPTDIR}/manage_dev" create_staff "${ROOTDIR}/samples/exampleMainStaffList.csv"

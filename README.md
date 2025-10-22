@@ -16,6 +16,8 @@ The RoomBot service allows guests to view which rooms they are assigned, and iss
 
 Additional details on these steps are available in this document.
 
+Contact an adult to request the contents of the "secret file". Put these contents into the `.secret` file in your local working copy.
+
 ## Local Development
 
 Docker should be available, and there are several system packages which must be installed (see [Requirements](#Requirements) section below).
@@ -61,10 +63,10 @@ At this point, the interface will be live, and admins may upload (sample) guest 
 
 Configuration is handled through environment variables, which are stored encrypted in GitHub. Secret management is handled through the `./scripts/secrets` script. You must have a file named `.secret` in the top level of the Git repository. Contact an adult for the contents of this file. See below for full list of configurable settings.
 
-* `./scripts/decrypt` generate the `secrets.env` file from encrypted source
-* `./scripts/encrypt` encrypt the `secrets.env` file
-* `./scripts/show` display all the env vars in a format suitable for `eval`
-* `./scripts show VAR` display the contents of the desired env var, stripped of quotes
+* `./scripts/secrets decrypt <env>` generate the `<env>.env` file from encrypted source
+* `./scripts/secrets encrypt <env>` encrypt the `<env>.env` file
+* `./scripts/secrets show <env>` display all the env vars in a format suitable for `eval`
+* `./scripts/secrets show <env> VAR` display the contents of the desired env var, stripped of quotes
 
 # Local Development
 
@@ -208,6 +210,12 @@ $ ./scripts/roombaht_ctl <user> <env> manage create_rooms /path/to/ballys-rooms.
 # actually apply the changes. user input will be required for all changes.
 $ ./scripts/roombaht_ctl <user> <env> manage create_rooms /path/to/ballys-rooms.csv --hotel ballys --preserve
 ```
+
+### Random (admin) Room Assignment
+
+The `test_fill_rooms` Django command will assign rooms to admins at random, approximately simualting how rooms are assigned based on Secret Party exports. By default, only five rooms will be assigned per admin.
+
+This command will _not_ run in production, and requires a manual confirmation in staging.
 
 ## Images
 

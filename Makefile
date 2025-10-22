@@ -1,5 +1,5 @@
 .PHONY = frontend_build frontend_dev frontend_archive frontend_clean \
-	local_backend_dev backend_archive backend_clean backend_migrations \
+	local_backend_dev backend_archive local_backend_migrations \
 	local_backend_env archive local_sample_data clean distclean \
 	local_backend_clean_data frontend_clean backend_distclean \
 	test

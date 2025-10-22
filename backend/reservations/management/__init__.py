@@ -2,6 +2,10 @@ import termios
 import tty
 import sys
 
+def confirm(message):
+    print("%s\n[y/n]" % message)
+    return getch().lower() == 'y'
+
 def getch():
     def _getch():
         fd = sys.stdin.fileno()
