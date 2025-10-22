@@ -77,7 +77,7 @@ Configuration is handled through environment variables, which are stored encrypt
 * Minimum of Python 3.10 with `virtualenv` and `uv`
 * A variety of "system packages" (note package names may vary on non-Linux)
   * `build-essential`
-  * `imagemagik`
+  * `imagemagick`
   * `libpq-dev`
   * `python3-dev`
 * no not believin' in yo self
