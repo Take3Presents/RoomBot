@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-FOLDER="17GU6iDJiSMVZGtHL0jWVoBgyPuiqsUVs"
-
 set -e
 
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
@@ -10,32 +8,85 @@ PUBLIC_DIR=""
 PRIVATE_DIR="With Smoking Icons"
 
 LAYOUTS_DIR="${ROOTDIR}/frontend/public/layouts"
-TMPDIR="$(mktemp -d)"
-
-cleanup() {
-    if [ -d "$TMPDIR" ] ; then
-	rm -rf "$TMPDIR"
-    fi
-}
+CACHE_DIR="${HOME}/.cache/roombot/floorplans"
 
 problems() {
     2>&1 echo "Error: $*"
     exit 1
 }
 
-trap cleanup EXIT
-
-if [ $# == 1 ] ; then
-    if [ -d "$1" ] ; then
-	echo "Using images from ${1}"
-	cp -vr "${1}/"* "$TMPDIR"
-    else
-	problems "${1} is not a directory"
+# return 0 if file is a PNG (checks magic header), 1 otherwise
+is_png() {
+    # PNG magic: 89 50 4E 47 0D 0A 1A 0A
+    # read first 8 bytes and compare in lowercase hex
+    local sig
+    if [ ! -f "$1" ]; then
+        return 1
     fi
-    shift
+    sig=$(head -c 8 -- "$1" | od -An -tx1 | tr -d ' \n') || return 1
+    [ "$sig" = "89504e470d0a1a0a" ]
+}
+
+ordinal_suffix() {
+    local n=$1
+    local mod100=$(( n % 100 ))
+    local mod10=$(( n % 10 ))
+    if [ $mod100 -ge 11 ] && [ $mod100 -le 13 ]; then
+        echo "th"
+        return
+    fi
+    case $mod10 in
+        1) echo "st" ;;
+        2) echo "nd" ;;
+        3) echo "rd" ;;
+        *) echo "th" ;;
+    esac
+}
+
+# normalize basename to lowercase and safe characters
+normalize_basename() {
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/_/g' -e 's/_\+/_/g' -e 's/^_//' -e 's/_$//'
+}
+
+BASENAME="ballys"
+SRC_OVERRIDE_DIR=""
+
+# Parse arguments: [-b|--base NAME] [IMAGES_DIR]
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        -b|--base)
+            [ $# -ge 2 ] || problems "--base requires an argument"
+            BASENAME="$2"
+            shift 2
+            ;;
+        *)
+            if [ -z "$SRC_OVERRIDE_DIR" ] && [ -d "$1" ] ; then
+                SRC_OVERRIDE_DIR="$1"
+                shift
+            else
+                problems "Unknown argument or not a directory: $1"
+            fi
+            ;;
+    esac
+done
+
+if [ ! -d "$CACHE_DIR" ] ; then
+    mkdir -p "$CACHE_DIR"
+fi
+
+FOLDER="$("${SCRIPTDIR}/secrets" show staging FLOORPLANS_GOOGLE_FOLDER 2> /dev/null || true)"
+if [ -z "$FOLDER" ] ; then
+    problems "unable to extract folder id from staging secrets"
+fi
+
+BASENAME_NORM=$(normalize_basename "$BASENAME")
+
+if [ -n "$SRC_OVERRIDE_DIR" ] ; then
+    echo "Using images from ${SRC_OVERRIDE_DIR}"
+    cp -vr "${SRC_OVERRIDE_DIR}/"* "$CACHE_DIR" || problems "Failed to copy from ${SRC_OVERRIDE_DIR}"
 else
-    "${ROOTDIR}/backend/.venv/bin/gdown" -O "$TMPDIR" --folder "$FOLDER"
-    if [ "$(ls -l "$TMPDIR" | wc -l)" == 0 ] ; then
+    "${ROOTDIR}/backend/.venv/bin/gdown" -cO "$CACHE_DIR" --folder "$FOLDER"
+    if [ "$(ls -1 "$CACHE_DIR" | wc -l)" = 0 ] ; then
 	problems "Nothing downloaded??"
     fi
 fi
@@ -47,30 +98,61 @@ if [ ! -d "$LAYOUTS_DIR" ] ; then
     mkdir -p "$LAYOUTS_DIR"
 fi
 
-# handle public images
-for image in "${TMPDIR}/${PUBLIC_DIR}/"*.png ; do
-    SRCFILE="$(basename "$image")"
-    DESTFILE="$(sed -e 's/ //g' -e 's/-/_/' -e 's/\./th\./' <<< "$SRCFILE")"
-    if grep -q '3th' <<< "$DESTFILE" ; then
-	DESTFILE="${DESTFILE/th/rd}"
+for image in "${CACHE_DIR}/${PUBLIC_DIR}"/* ; do
+    [ -f "$image" ] || continue
+    if ! is_png "$image" ; then
+        continue
     fi
-    THUMBFILE="${DESTFILE%.*}_thumb.png"
-    cp "${TMPDIR}/${PUBLIC_DIR}/${SRCFILE}" "${LAYOUTS_DIR}/${DESTFILE}"
-    echo "Fetched ${SRCFILE} as ${DESTFILE}"
-    convert "${TMPDIR}/${PUBLIC_DIR}/${SRCFILE}" -format png -thumbnail 35x30 "${LAYOUTS_DIR}/${THUMBFILE}"
-    echo "Generated thumbnail ${THUMBFILE}"
+    SRCFILE="$(basename "$image")"
+    floor_num=""
+    if [[ "$SRCFILE" =~ ^([0-9]+)[[:space:]]*[Ff][Ll][Oo][Oo][Rr] ]]; then
+        floor_num="${BASH_REMATCH[1]}"
+    else
+        continue
+    fi
+    # convert to integer (strip leading zeros)
+    floor_num=$((10#$floor_num))
+    suf=$(ordinal_suffix "$floor_num")
+    DESTFILE="${BASENAME_NORM}_${floor_num}${suf}.png"
+    THUMBFILE="${BASENAME_NORM}_${floor_num}${suf}_thumb.png"
+    if [ ! -e "${LAYOUTS_DIR}/${DESTFILE}" ] ; then
+	cp "$image" "${LAYOUTS_DIR}/${DESTFILE}"
+	echo "Fetched ${SRCFILE} as ${DESTFILE}"
+    else
+	echo "Skipped ${DESTFILE}"
+    fi
+    if [ ! -e "${LAYOUTS_DIR}/${THUMBFILE}" ] ; then
+	convert "$image" -format png -thumbnail 35x30 "${LAYOUTS_DIR}/${THUMBFILE}"
+	echo "Generated thumbnail ${THUMBFILE}"
+    else
+	echo "Skipped ${DESTFILE} thumbnail"
 done
 
-# for private images. different filename.
-for image in "${TMPDIR}/${PRIVATE_DIR}/"*.png ; do
-    SRCFILE="$(basename "$image")"
-    DESTFILE="private_$(sed -e 's/ //g' -e 's/-/_/' -e 's/\./th\./' <<< "$SRCFILE")"
-    if grep -q '3th' <<< "$DESTFILE" ; then
-	DESTFILE="${DESTFILE/th/rd}"
+for image in "${CACHE_DIR}/${PRIVATE_DIR}"/* ; do
+    [ -f "$image" ] || continue
+    if ! is_png "$image" ; then
+        continue
     fi
-    THUMBFILE="${DESTFILE%.*}_thumb.png"
-    cp "${TMPDIR}/${PRIVATE_DIR}/${SRCFILE}" "${LAYOUTS_DIR}/${DESTFILE}"
-    echo "Fetched ${PRIVATE_DIR}/${SRCFILE} as ${DESTFILE}"
-    convert "${TMPDIR}/${PRIVATE_DIR}/${SRCFILE}" -format png -thumbnail 35x30 "${LAYOUTS_DIR}/${THUMBFILE}"
-    echo "Generated thumbnail ${THUMBFILE}"
+    SRCFILE="$(basename "$image")"
+    floor_num=""
+    if [[ "$SRCFILE" =~ -[[:space:]]*([0-9]+)(\.[^.]*)?$ ]]; then
+        floor_num="${BASH_REMATCH[1]}"
+    else
+        continue
+    fi
+    floor_num=$((10#$floor_num))
+    suf=$(ordinal_suffix "$floor_num")
+    DESTFILE="${BASENAME_NORM}_${floor_num}${suf}.png"
+    THUMBFILE="${BASENAME_NORM}_${floor_num}${suf}_thumb.png"
+    if [ ! -e "${LAYOUTS_DIR}/${DESTFILE}" ] ; then
+	cp "$image" "${LAYOUTS_DIR}/${DESTFILE}"
+	echo "Fetched ${PRIVATE_DIR}/${SRCFILE} as ${DESTFILE}"
+    else
+	echo "Skipped ${DESTFILE}"
+    fi
+    if [ ! -e "${LAYOUTS_DIR}/${THUMBFILE}" ] ; then
+	convert "$image" -format png -thumbnail 35x30 "${LAYOUTS_DIR}/${THUMBFILE}"
+	echo "Generated thumbnail ${THUMBFILE}"
+	echo "Skipped ${DESTFILE} thumbnail"
+    fi
 done
