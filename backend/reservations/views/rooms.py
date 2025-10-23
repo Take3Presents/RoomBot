@@ -189,7 +189,8 @@ def swap_request(request):
         requester_swappable = []
         for room_number in requester_room_numbers:
             try:
-                room = Room.objects.get(number=room_number, name_hotel__in=roombaht_config.GUEST_HOTELS)
+                room = Room.objects.get(number=room_number,
+                                        name_hotel=name_hotel)
                 if room.name_take3 == swap_room.name_take3 and room.swappable():
                     requester_swappable.append(room_number)
             except Room.DoesNotExist:
