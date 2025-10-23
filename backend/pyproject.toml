@@ -46,7 +46,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "coverage==7.6.4",
-    "gdown==4.7.1",
+    "gdown==5.2.0",
     "ipdb==0.13.13",
     "lorem-text==2.1",
     "names-generator==0.1.0",
