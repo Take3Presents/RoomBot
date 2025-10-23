@@ -6,7 +6,7 @@
 
 # generates the frontend static content
 frontend_build:
-#	test -d frontend/public/layouts || ./scripts/fetch-images
+	test -d frontend/public/layouts || ./scripts/fetch-images
 	docker build -t roombaht:latest frontend/
 	docker run -u node \
 		-v $(shell pwd)/frontend:/src \
