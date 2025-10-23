@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 PACKAGES=(aptitude nginx screen python3 virtualenv certbot python3-certbot-nginx postgresql-client htop iftop build-essential python3-dev libpq-dev jq postgresql-server-dev-all)
+UV_VERSION="0.9.2"
+UV_CHECKSUM="b775bb84c72210c6c0b9670cfaad0ac2e3953f12a2947d52b57603b4fbae3798"
 
 set -e
 
@@ -54,15 +56,41 @@ os_freshen() {
     apt-get update
     apt-get upgrade -y
     apt-get install -y "${PACKAGES[@]}"
-    pip install --upgrade awscli
+}
+
+python_freshen() {
+    local UV_FILE="uv-x86_64-unknown-linux-gnu"
+    local UV_ARCHIVE="${UV_FILE}.tar.gz"
+    local UV_URL="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV_ARCHIVE}"
+
+    # install uv
+    curl -sLo "/tmp/${UV_ARCHIVE}" "$UV_URL"
+    tar -xzC /tmp -f "/tmp/${UV_ARCHIVE}"
+    mv "/tmp/${UV_FILE}/uv"* /usr/local/bin
+    rm -rf "/tmp/${UV_ARCHIVE}" "/tmp/${UV_FILE}"
+
+    # some pips
+    if ! uv tool list | grep -q aws ; then
+	uv tool install awscli
+    else
+	uv tool update awscli
+    fi
+
+    if ! grep -q uv ~/.bashrc ; then
+	uv tool update-shell
+    fi
 }
 
 os_freshen
+python_freshen
 
 add_user gadget otakup0pe
 add_user index Index01
+add_user cubes cubes
+
 add_user roombaht
 lock_user ubuntu
 
 sudo_user gadget
 sudo_user index
+sudo_user cubes

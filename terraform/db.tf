@@ -23,7 +23,7 @@ resource "aws_db_instance" "roombaht" {
   kms_key_id = aws_kms_key.roombaht.arn
   multi_az = false
   allow_major_version_upgrade = false
-  backup_retention_period = 14
+  backup_retention_period = 35
   backup_target = "region"
   delete_automated_backups = true
   skip_final_snapshot = true
