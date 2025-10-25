@@ -25,5 +25,8 @@ jobs:
         with:
           version: "0.7.12"
 
-      - name: Run backend tests
-        run: make local_backend_tests
+      - name: Run unit tests
+        run: make local_backend_unit_tests
+
+      - name: Run integration tests
+        run: make local_backend_integration_tests

@@ -1,12 +1,17 @@
+from __future__ import annotations
+from csv import DictReader
 import datetime
 import logging
 import sys
-from django.utils.timezone import make_aware
-from django.db import models
-from reservations.constants import ROOM_LIST
+
 from dirtyfields import DirtyFieldsMixin
-from reservations.helpers import real_date
+from django.db import models
+from django.utils.timezone import make_aware
+
 import reservations.config as roombaht_config
+from reservations.constants import ROOM_LIST
+from reservations.helpers import real_date
+
 
 logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 logger = logging.getLogger('__name__')
@@ -62,6 +67,118 @@ class Staff(models.Model):
 
     def __str__(self):
         return f'staff name: {self.name}'
+
+
+class RoomClassManager(models.Manager):
+    def bulk_create_from_csv(self, filename: str) -> None:
+        """Bulk create RoomClass records from CSV file
+
+        Returns a list of created RoomClass records.
+
+        """
+        fields_for_create = frozenset(["hotel_room_type_code", "hotel_room_type_name"])
+        to_create = []
+
+        with open(filename, 'r') as f:
+            reader = DictReader(f)
+            self._normalize_fieldnames(reader)
+
+            for row in reader:
+                # The SP Asset Names field in the Hotel Room Breakdown Key
+                # contains one asset name per line, so we split accordingly
+                sp_asset_names = row["sp_asset_names"].strip().split("\n")
+                for sp_asset_name in sp_asset_names:
+                    create_kwargs = {
+                        k: v.strip() for k, v in row.items() if k in fields_for_create
+                    }
+                    create_kwargs["sp_asset_name"] = sp_asset_name
+                    create_kwargs["hotel_name"] = self.model.derive_hotel_name(sp_asset_name)
+                    to_create.append(self.model(**create_kwargs))
+
+
+        RoomClass.objects.bulk_create(to_create, ignore_conflicts=True)
+
+
+    def _normalize_fieldnames(self, reader: DictReader) -> None:
+        """Convert input DictReader's fieldnames to expected values
+
+        This is needed because the input CSV fieldnames may include
+        the hotel name, and contain spaces and capitalization.
+
+        """
+        normalized_fieldnames = []
+
+        for old_fieldname in reader.fieldnames:
+            fieldname = old_fieldname.lower().strip()
+
+            if "room type code" in fieldname:
+                fieldname = "hotel_room_type_code"
+            elif "room type name" in fieldname:
+                fieldname = "hotel_room_type_name"
+            elif "asset names" in fieldname:
+                fieldname = "sp_asset_names"
+
+            normalized_fieldnames.append(fieldname)
+
+        reader.fieldnames = normalized_fieldnames
+
+
+class RoomClass(DirtyFieldsMixin, models.Model):
+    """Represents a class of rooms
+
+    A RoomClass is the database representation of Hotel Room Key data,
+    see the Hotel Room Breakdown Key spreadsheet for more details.
+
+    Each RoomClass record is uniquely identified by its Secret Party
+    Asset Name and the hotel Room Type Code. Notably, features don't
+    apply to RoomClass records, they apply to actual Room records.
+
+    """
+
+    class HotelName(models.TextChoices):
+        BALLYS = "Bally's"
+        NUGGET = "Nugget"
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    sp_asset_name = models.CharField(
+        verbose_name="Secret Party Asset Name",
+        max_length=255,
+    )
+    hotel_room_type_code = models.CharField(
+        verbose_name="Hotel Room Type Code",
+        max_length=20,
+    )
+    hotel_name = models.CharField(
+        verbose_name="Hotel Name",
+        max_length=20,
+        choices=HotelName.choices,
+    )
+    hotel_room_type_name = models.CharField(
+        verbose_name="Hotel Room Type Name",
+        max_length=255,
+    )
+
+    objects = RoomClassManager()
+
+    class Meta:
+        unique_together = (
+            ('sp_asset_name', 'hotel_room_type_code'),
+        )
+
+    def __str__(self):
+        return f"{self.hotel_name}:{self.hotel_room_type_code}:{self.sp_asset_name}"
+
+    @staticmethod
+    def derive_hotel_name(sp_asset_name: str) -> HotelName:
+        if "nugget" in sp_asset_name.lower():
+            return RoomClass.HotelName.NUGGET
+
+        if "bally's" in sp_asset_name.lower():
+            return RoomClass.HotelName.BALLYS
+
+        raise ValueError(f"Could not derive hotel name from asset name: {sp_asset_name}")
+
 
 class Room(DirtyFieldsMixin, models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

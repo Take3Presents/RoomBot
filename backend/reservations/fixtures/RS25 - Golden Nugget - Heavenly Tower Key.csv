@@ -1,0 +1,17 @@
+GN Room Type Code,SP Asset Names,GN Room Type Name,Notes
+King,"17.1 Nugget - Heavenly King
+17.2 Nugget - Heavenly King (DTS)",Standard King,"""not sold - only comps"""
+HKLV,"18.1 Nugget - Heavenly Lakeview King
+18.2 Nugget - Heavenly Lakeview King (DTS)",King Lakeview,"""not sold - only comps"""
+HKLVB,"19.1 Nugget - Heavenly Lakeview Balcony King
+19.2 Nugget - Heavenly Lakeview Balcony King (DTS)",King Lakeview Balcony,
+HKLVBA,"19.1 Nugget - Heavenly Lakeview Balcony King
+19.2 Nugget - Heavenly Lakeview Balcony King (DTS)",King Lakeview Balcony ADA,only 1 of these - sold as HKLVB
+HQQLV,"20.1 Nugget - Heavenly Lakeview 2 Queens
+20.2 Nugget - Heavenly Lakeview 2 Queens (DTS)",Double Queen Lakeview,"""not sold - only comps"""
+HQQLVB,"21.1 Nugget - Heavenly Lakeview Balcony 2 Queens
+21.2 Nugget - Heavenly Lakeview Balcony 2 Queens (DTS)",Double Queen Lakeview Balcony,"""not sold - only comps"""
+HSMV,"22.1 Nugget - Heavenly Mountain View King Suite
+22.2 Nugget - Heavenly Mountain View King Suite (DTS)",Mountain View Suite Balcony,
+HSLVB,"23.1 Nugget - Heavenly Lakeview Balcony King Suite
+23.2 Nugget - Heavenly Lakeview Balcony King Suite (DTS)",King Suite Lakeview Balcony,
