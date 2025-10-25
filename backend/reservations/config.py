@@ -31,6 +31,7 @@ TEMP_DIR = env_config('tmp', '/tmp')
 IGNORE_TRANSACTIONS = env_config('ignore_transactions').split(',')
 SWAPS_ENABLED = env_config('swaps_enabled', 'true').lower() == 'true'
 GUEST_HOTELS = env_config('guest_hotels', 'Ballys,Nugget').split(',')
+VISIBLE_HOTELS = env_config('visible_hotels', 'Ballys').split(',')
 
 FEATURES = env_config('features', '').split(',')
 

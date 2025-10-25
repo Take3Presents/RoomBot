@@ -21,7 +21,8 @@ export default class MyRoomsTable extends React.Component {
   state = {
     rooms : [],
     jwt: "",
-    refreshTimer: null
+    refreshTimer: null,
+    hotels: []
   }
 
   loadMyRooms() {
@@ -38,6 +39,7 @@ export default class MyRoomsTable extends React.Component {
         console.log(JSON.stringify(data));
         this.state.rooms = data.rooms;
 	this.state.swaps_enabled = data.swaps_enabled;
+	this.state.hotels = data.hotels;
         this.setState({ data });
 	if ( this.state.swaps_enabled && this.state.refreshTimer === null ) {
 	  this.state.refreshTimer = setInterval(() => {
@@ -62,7 +64,7 @@ export default class MyRoomsTable extends React.Component {
       });
   }
 
-  storyHeaderFactory(swaps_enabled) {
+  storyHeaderFactory(swaps_enabled, hotels) {
     let STORY_HEADERS: TableColumnType<ArrayElementType>[] = [
         {
           prop: "number",
@@ -85,7 +87,15 @@ export default class MyRoomsTable extends React.Component {
             <ModalEnterCode row={row} swaps_enabled={swaps_enabled} onExited={() => this.loadMyRooms() }/>
           )
         },
-      ];
+					];
+					if (hotels && hotels.length > 1) {
+					  STORY_HEADERS.unshift({
+					    prop: "name_hotel",
+					    title: "Hotel",
+					    isSortable: true,
+					    isFilterable: true
+					  });
+					}
     return STORY_HEADERS;
   };
 
@@ -98,7 +108,7 @@ export default class MyRoomsTable extends React.Component {
     return(
       <DatatableWrapper
         body={this.state.rooms}
-        headers={this.storyHeaderFactory(this.state.swaps_enabled)} >
+        headers={this.storyHeaderFactory(this.state.swaps_enabled, this.state.hotels)} >
 	{error && (<Navigate to="/login" replace={true} />)}
         <Row className="mb-4 p-2">
           <Col
