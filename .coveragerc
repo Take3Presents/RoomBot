@@ -1,2 +1,5 @@
 [run]
 sigterm=true
+omit =
+     backend/reservations/tests/*
+     backend/reservations/checks.py

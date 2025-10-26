@@ -2,11 +2,11 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 # A Special Room
 300,Laboratory,,,,,,,,
 # generic rooms
-301,King,Hearing Accessible,,,,,,Roombaht,
+301,King,Hearing Accessible,,,,,,,
 # generic room
-302,Queen,Smoking,,,,,,Roombaht,
-303,King,Lakeview,,,,,,Roombaht,
-304,Queen,ADA,,,,,,Roombaht,
+302,Queen,Smoking,,,,,,,
+303,King,Lakeview,,,,,,,
+304,Queen,ADA,,,,,,,
 # Simple placed room w/o check-in/check-out
 305,Queen,,Foo,Bar,,,,Foo Placer,aaa001
 # Simple placed room with check-in/check-out
@@ -21,11 +21,11 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 # comp'd room
 311,Queen,Smoking,Staff,Staffy,Staffys Friend,Wed 11/08,Mon 11/13,Foo Placer,
 #more free rooms
-400,Queen,,,,,,,Roombaht,
-401,Queen,,,,,,,Roombaht,
-402,Queen,,,,,,,Roombaht,
-403,Queen,,,,,,,Roombaht,
-404,King,,,,,,,Roombaht,
+400,Queen,,,,,,,,
+401,Queen,,,,,,,,
+402,Queen,,,,,,,,
+403,Queen,,,,,,,,
+404,King,,,,,,,,
 405,Queen,,Foo,Kar,,,,Foo Placer,aaa016
 # placed room that will be transfered twice
 406,Queen,,Fob,TxBar,,,,Foo Placer,aaa020
@@ -35,10 +35,10 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 409,Dungeon,,Rock,Lobster,Rock Buddy,,,Foo Placer,
 410,King,,Rock,Lobster,,,,Foo Placer,aaa023
 # more free rooms
-411,Queen,,,,,,,Roombaht,
-412,King,,,,,,,Roombaht,
-413,King,,,,,,,Roombaht,
-414,King,,,,,,,Roombaht,
-415,Queen,,,,,,,Roombaht,
-416,King,,,,,,,Roombaht,
-417,Queen,,,,,,,Roombaht,
+411,Queen,,,,,,,,
+412,King,,,,,,,,
+413,King,,,,,,,,
+414,King,,,,,,,,
+415,Queen,,,,,,,,
+416,King,,,,,,,,
+417,Queen,,,,,,,,

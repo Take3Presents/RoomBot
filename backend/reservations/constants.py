@@ -2,136 +2,133 @@ ROOM_LIST = {
     'Queen': {
         'hotel': "Bally's",
         'rooms': [
-            "Bally's - Standard 2 Queen",
-            "Bally's - Standard 2 Queen (DTS)",
-            "Bally's - Art Room 2 Queen",
-            "Bally's - Art Room 2 Queen (DTS)",
-            "Bally's - \"\"Quiet\"\" Art Room 2 Queen",
-            "Bally's - \"\"Quiet\"\" Art Room 2 Queen (DTS)"
+            "04.1 Bally's - Standard 2 Queen",
+            "04.2 Bally's - Standard 2 Queen (DTS)",
+            "05.1 Bally's - Art Room 2 Queen",
+            "05.2 Bally's - Art Room 2 Queen (DTS)",
+            "06.1 Bally's - \"Quiet\" Art Room 2 Queen",
+            "06.2 Bally's - \"Quiet\" Art Room 2 Queen (DTS)"
         ]
     },
 
-    "Double Queen Beds Lake View Balcony": {
+    "Double Queen Lakeview": {
         'hotel': 'Nugget',
         'rooms': [
-            'Nugget - Lakeview Balcony 2 Queens',
-            'Nugget - Lakeview Balcony 2 Queens (DTS)'
+            '15.1 Nugget - Sunset Lakeview 2 Queens',
+            '15.2 Nugget - Sunset Lakeview 2 Queens (DTS)',
+            '20.1 Nugget - Heavenly Lakeview 2 Queens',
+            '20.2 Nugget - Heavenly Lakeview 2 Queens (DTS)'
         ]
     },
 
-    "Double Queen Beds Lake View": {
+    "Double Queen Lakeview Balcony": {
         'hotel': 'Nugget',
         'rooms': [
-            'Nugget - Lakeview 2 Queens',
-            'Nugget - Lakeview 2 Queens (DTS)'
+            '21.1 Nugget - Heavenly Lakeview Balcony 2 Queens',
+            '21.2 Nugget - Heavenly Lakeview Balcony 2 Queens (DTS)'
         ]
     },
 
-    "Double Queen Beds": {
-        'hotel': 'Nugget'
-    },
-
-    "Double Queen Beds Balcony": {
-        'hotel': 'Nugget'
+    "Standard Double Queen": {
+        'hotel': 'Nugget',
+        'rooms': [
+            '14.1 Nugget - Sunset 2 Queen',
+            '14.2 Nugget - Sunset 2 Queen (DTS)'
+        ]
     },
 
     'Queen Sierra Suite': {
         'hotel': "Bally's",
         'rooms': [
-            "Bally's - Queen Sierra Suite",
-            "Bally's - Queen Sierra Suite (DTS)"
+            "09.1 Bally's - Queen Sierra Suite",
+            "09.2 Bally's - Queen Sierra Suite (DTS)"
         ]
     },
 
-    "King Bed": {
+    "Standard King": {
         'hotel': 'Nugget',
         'rooms': [
-            'Nugget - Standard King',
-            'Nugget - Standard King (DTS)'
+            '11.1 Nugget - Sunset King',
+            '11.2 Nugget - Sunset King (DTS)',
+            '17.1 Nugget - Heavenly King',
+            '17.2 Nugget - Heavenly King (DTS)'
         ]
     },
 
     "King": {
         'hotel': "Bally's",
         'rooms': [
-            "Bally's - Standard King",
-            "Bally's - Standard King (DTS)",
-            "Bally's - Art Room King",
-            "Bally's - Art Room King (DTS)",
-            "Bally's - \"\"Quiet\"\" Art Room King",
-            "Bally's - \"\"Quiet\"\" Art Room King (DTS)"
+            "01.1 Bally's - Standard King",
+            "01.2 Bally's - Standard King (DTS)",
+            "02.1 Bally's - Art Room King",
+            "02.2 Bally's - Art Room King (DTS)",
+            "03.1 Bally's - \"Quiet\" Art Room King",
+            "03.2 Bally's - \"Quiet\" Art Room King (DTS)"
         ]
     },
 
-    "King Bed Lake View": {
+    "King Lakeview": {
         'hotel': "Nugget",
         'rooms': [
-            'Nugget - Lakeview King',
-            'Nugget - Lakeview King (DTS)'
+            '13.1 Nugget - Sunset Lakeview King',
+            '13.2 Nugget - Sunset Lakeview King (DTS)'
+            '18.1 Nugget - Heavenly Lakeview King',
+            '18.2 Nugget - Heavenly Lakeview King (DTS)'
         ]
     },
 
-    "King Bed Lake View Balcony": {
-        'hotel': "Nugget",
-        'rooms': [
-            'Nugget - Lakeview Balcony King',
-            'Nugget - Lakeview Balcony King (DTS)'
-        ]
-    },
-
-    "King Bed Balcony": {
+    "King Lakeview Balcony": {
         'hotel': 'Nugget',
         'rooms': [
-            'Nugget - Balcony King',
-            'Nugget - Balcony King (DTS)'
+            '19.1 Nugget - Heavenly Lakeview Balcony King',
+            '19.2 Nugget - Heavenly Lakeview Balcony King (DTS)'
+        ]
+    },
+
+    "King Balcony": {
+        'hotel': 'Nugget',
+        'rooms': [
+            '12.1 Nugget - Sunset Balcony King',
+            '12.2 Nugget - Sunset Balcony King (DTS)'
         ]
     },
 
     'King Sierra Suite': {
         'hotel': "Bally's",
         'rooms': [
-            "Bally's - King Sierra Suite",
-            "Bally's - King Sierra Suite (DTS)"
+            "08.1 Bally's - King Sierra Suite",
+            "08.2 Bally's - King Sierra Suite (DTS)"
         ]
     },
 
     'Tahoe Suite': {
         'hotel': "Bally's",
         'rooms': [
-            "Bally's - Tahoe Suite",
-            "Bally's - Tahoe Suite (DTS)"
+            "10.1 Bally's - Tahoe Suite",
+            "10.2 Bally's - Tahoe Suite (DTS)"
         ]
     },
 
     "Executive Suite": {
         'hotel': "Bally's",
         'rooms': [
-            "Bally's - Executive King Suite",
-            "Bally's - Executive King Suite (DTS)"
+            "07.1 Bally's - Executive King Suite",
+            "07.2 Bally's - Executive King Suite (DTS)"
         ]
     },
 
-    "King Bed Suite Lake View Balcony": {
+    "Sunset King Suite": {
         'hotel': "Nugget",
         'rooms': [
-            "Nugget - King Lakeview Balcony Suite",
-            "Nugget - King Lakeview Balcony Suite (DTS)"
+            "16.1 Nugget - Sunset King Suite",
+            "16.2 Nugget - Sunset King Suite (DTS)"
         ]
     },
-
-    "King Bed Suite Mountain View": {
+    "Mountain View Suite Balcony": {
         'hotel': "Nugget",
         'rooms': [
-            "Nugget - King Mountain View Suite",
-            "Nugget - King Mountain View Suite (DTS)"
-        ]
-    },
-
-    "King Bed Suite Balcony": {
-        'hotel': "Nugget",
-        'rooms': [
-            "Nugget - King Pool View Balcony Suite",
-            "Nugget - King Pool View Balcony Suite (DTS)"
+            "22.1 Nugget - Heavenly Mountain View King Suite",
+            "22.2 Nugget - Heavenly Mountain View King Suite (DTS)"
         ]
     }
 }

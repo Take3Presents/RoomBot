@@ -1,11 +1,8 @@
 import logging
 import os
 import sys
-from datetime import datetime
 
-import django
-django.setup()
-from csv import DictReader, DictWriter
+from csv import DictWriter
 from reservations.models import Guest, Room, Swap
 from django.forms.models import model_to_dict
 from reservations.helpers import ts_suffix, egest_csv, take3_date
@@ -59,9 +56,9 @@ def diff_latest(rows):
             if not existing_ticket:
                 diff_count+=1
                 diffout.write("%s,%s %s,%s\n" % (row['ticket_code'],
-                                               row['first_name'],
-                                               row['last_name'],
-                                               row['email']))
+                                                 row['first_name'],
+                                                 row['last_name'],
+                                                 row['email']))
 
         diffout.write("Things in db but not in most recent guest list upload\n")
         for guest in guests:

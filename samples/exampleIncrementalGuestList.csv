@@ -1,28 +1,28 @@
 ticket_code,last_name,first_name,email,product,transferred_from_code,transferred_from_email
 # transferred from someone in initial list
-ccc001,TxBam,Fom,fom.txbam@noop.com,Bally's - Standard 2 Queen,bbb001,
-ccc002,TxBam,Fon,fon.txbam@noop.com,Bally's - Standard King,aaa004,
+ccc001,TxBam,Fom,fom.txbam@noop.com,04.1 Bally's - Standard 2 Queen,bbb001,
+ccc002,TxBam,Fon,fon.txbam@noop.com,01.2 Bally's - Standard King,aaa004,
 # just some more new purchases
-ccc003,Bam,Non,non.bam@noop.com,Bally's - Standard 2 Queen,,
-ccc004,Bam,Von,von.bam@noop.com,Bally's - Standard 2 Queen,,
-ccc005,Bam,Jon,jon.bam@noop.com,Bally's - Standard King,,
+ccc003,Bam,Non,non.bam@noop.com,04.1 Bally's - Standard 2 Queen,,
+ccc004,Bam,Von,von.bam@noop.com,04.1 Bally's - Standard 2 Queen,,
+ccc005,Bam,Jon,jon.bam@noop.com,01.1 Bally's - Standard King,,
 # this guest again ayyy
-ccc006,Lobster,Rock,rock.lobster@noop.com,Bally's - Standard King,,
-ccc007,Lobster,Rock,rock.lobster@noop.com,Bally's - Standard King,,
-ccc008,Lobster,Rock,rock.lobster@noop.com,Bally's - Standard 2 Queen,,
+ccc006,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
+ccc007,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
+ccc008,Lobster,Rock,rock.lobster@noop.com,04.1 Bally's - Standard 2 Queen,,
 # some hard rock transfers
-hha001,Noo,Foo,foo.noo@noop.com,Nugget - Balcony King,hhh016,
-hha002,Moo,Foo,foo.moo@noop.com,Nugget - Standard King,hhh017,
-hha003,Moo,Coo,coo.moo@noop.com,Nugget - King Pool View Balcony Suite,hhh019,
+hha001,Noo,Foo,foo.noo@noop.com,11.1 Nugget - Sunset King,hhh016,
+hha002,Moo,Foo,foo.moo@noop.com,11.2 Nugget - Sunset King (DTS),hhh017,
+hha003,Moo,Coo,coo.moo@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh019,
 # non placed room
-hha004,Bap,Bon,bon.bap@noop.com,Nugget - Lakeview King,,
-hha005,Cap,Con,con.cap@noop.com,Nugget - King Mountain View Suite,,
-hha006,Cap,Bon,bon.cap@noop.com,Nugget - King Lakeview Balcony Suite,,
+hha004,Bap,Bon,bon.bap@noop.com,13.1 Nugget - Sunset Lakeview King,,
+hha005,Cap,Con,con.cap@noop.com,22.1 Nugget - Heavenly Mountain View King Suite,,
+hha006,Cap,Bon,bon.cap@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
 # double transfer for existing room
-hha007,Cap,Bop,bop.cap@noop.com,Nugget - King Pool View Balcony Suite,hhh020,
-hha008,Cap,Boq,bop.caq@noop.com,Nugget - King Pool View Balcony Suite,hha007,
+hha007,Cap,Bop,bop.cap@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh020,
+hha008,Cap,Boq,bop.caq@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hha007,
 # single transfer for existing placed room
-hha009,Baa,Foj,foj.baa@noop.com,Bally's - Art Room King,aaa005
+hha009,Baa,Foj,foj.baa@noop.com,02.1 Bally's - Art Room King,aaa005
 # double transfer for existing placed room
-hha011,Lobster,Stone,stone.lobster@noop.com,Bally's - Standard King,hha010,
-hha010,Lobster,Boulder,boulder.lobster@noop.com,Bally's - Standard King,aaa023,
+hha011,Lobster,Stone,stone.lobster@noop.com,01.1 Bally's - Standard King,hha010,
+hha010,Lobster,Boulder,boulder.lobster@noop.com,01.1 Bally's - Standard King,aaa023,

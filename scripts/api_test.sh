@@ -16,6 +16,9 @@ cleanup() {
 }
 
 init() {
+    if [ -e "$LOG" ] ; then
+	rm "$LOG"
+    fi
     "${SCRIPTDIR}/test_infra.sh" start
     local COUNT=5
     while [ "$COUNT" -gt 0 ] ; do
@@ -41,9 +44,11 @@ run() {
     # first run tests with static fixtures
     source "${ROOTDIR}/test.env"
 
+    manage loaddata test_admin
     manage loaddata test_users
     "$TAVERN" backend/tavern/test_login.tavern.yml
 
+    manage loaddata test_admin
     manage loaddata test_users
     manage loaddata test_rooms
     "$TAVERN" backend/tavern/test_room_swap.tavern.yml
@@ -63,14 +68,14 @@ run() {
     manage create_staff "${ROOTDIR}/samples/exampleMainStaffList.csv"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleBallysRoomList.csv" \
-           --hotel ballys --preserve --force \
+           --hotel ballys --preserve --force --blank-placement-is-available \
            --default-check-in="1999/1/1" --default-check-out="1999/1/10"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleNuggetRoomList.csv" \
-           --hotel nugget --preserve --force \
+           --hotel nugget --preserve --force --blank-placement-is-available  \
            --default-check-in "1999/1/1" --default-check-out "1999/1/10"
 
-    manage loaddata test_users
+    manage loaddata test_admin
     "$TAVERN" backend/tavern/test_guests.tavern.yml
     manage room_list >> "$LOG" 2>&1
     manage room_list -t Queen >> "$LOG" 2>&1

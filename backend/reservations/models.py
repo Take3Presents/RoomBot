@@ -1,6 +1,7 @@
 import datetime
 import logging
 import sys
+import re
 from django.utils.timezone import make_aware
 from django.db import models
 from reservations.constants import ROOM_LIST
@@ -37,7 +38,10 @@ class Guest(models.Model):
     last_login = models.DateTimeField(blank=True, null=True)
 
     @staticmethod
-    def chain(trans_code, guest_chain=[]):
+    def chain(trans_code, guest_chain=None):
+        # Avoid mutable default argument; create a new list per call
+        if guest_chain is None:
+            guest_chain = []
         try:
             existing_guest = Guest.objects.get(ticket=trans_code)
         except Guest.DoesNotExist:
@@ -184,10 +188,11 @@ class Room(DirtyFieldsMixin, models.Model):
 
     @staticmethod
     def derive_hotel(product):
-        if product.lower().startswith('nugget'):
+        stripped_product = re.sub(r'^0*\d+\.\d+\s+', '', product)
+        if stripped_product.lower().startswith('nugget'):
             return 'Nugget'
 
-        if product.lower().startswith('bally'):
+        if stripped_product.lower().startswith('bally'):
             return 'Ballys'
 
         raise UnknownProductError(product)

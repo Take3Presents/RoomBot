@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from reservations.models import Room
+import reservations.config as roombaht_config
 
 class Command(BaseCommand):
     help = "List all rooms"
@@ -7,11 +8,20 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('-t', '--room-type',
                             help='The (short) room product code')
+        parser.add_argument('--hotel-name',
+                            default='Ballys',
+                            help='The hotel name. Defaults to Ballys.')
 
     def handle(self, *args, **kwargs):
+        rooms = Room.objects.all()
+        if kwargs['hotel_name']:
+            if kwargs['hotel_name'].title() not in roombaht_config.GUEST_HOTELS:
+                raise CommandError(f"Invalid hotel {kwargs['hotel_name']} specified")
 
-        for room in Room.objects.all():
-            if kwargs['room_type']  and room.name_take3 != kwargs['room_type']:
+            rooms = rooms.filter(name_hotel=kwargs['hotel_name'].title())
+
+        for room in rooms:
+            if kwargs['room_type'] and room.name_take3 != kwargs['room_type']:
                 continue
 
             placed_msg = 'yes' if room.is_placed else 'no'

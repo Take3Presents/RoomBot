@@ -91,8 +91,7 @@ def create_rooms_main(cmd, args):
             if 'smoking' in features:
                 room.is_smoking = True
 
-            if elem.placed_by == 'Roombaht' or \
-               (elem.placed_by == '' and args['blank_is_available']):
+            if (elem.placed_by == '' and args['blank_is_available']):
                 room.placed_by_roombot = True
                 room.is_available = True
                 if room.name_hotel == 'Ballys':
@@ -159,7 +158,7 @@ def create_rooms_main(cmd, args):
             if elem.placed_by == '' and not args['blank_is_available']:
                 cmd.stderr.write(f"Room {room.number} Reserved w/o placer")
 
-            if elem.placed_by != 'Roombaht' and elem.placed_by != '' and not room.is_placed:
+            if elem.placed_by != '' and not room.is_placed:
                 room.is_placed = True
 
             room.available = False

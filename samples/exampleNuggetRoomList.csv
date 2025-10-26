@@ -1,37 +1,37 @@
 Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Resident),Last Name (Resident),Secondary Name,Check-In Date,Check-Out Date,Placed By,Ticket ID in SecretParty
 # Generic rooms and their features
-100,Standard King,Hearing Accessible,,,,,,Roombaht,
-101,Double Queen Beds Lake View,Smoking,,,,,,Roombaht,
-102,Standard King,Smoking,,,,,,Roombaht,
+100,Standard King,Hearing Accessible,,,,,,,
+101,Double Queen Beds Lake View,Smoking,,,,,,,
+102,Standard King,Smoking,,,,,,,
 # some comp'd placed rooms
 103,Double Queen Beds Lake View,,Staff,Staffy,,,,Foo Placer,
 104,Double Queen Beds Lake View,,Staff,Staffy,,,,Foo Placer,
 # a placed purchased room
 105,Double Queen Beds,Balcony,Hat,Fob,,,,Foo Placer,hhh010
 # placed transfer
-107,King Bed,,,,,,,Roombaht,
+107,King Bed,,,,,,,,
 # placed / compd room
 108,King Bed,Mountain View,Fop,Hat,,,,Foo Placer,
 # placed transfer
 109,King Bed,MountainView,Moo,Foo,,,,Foo Placer,hhh017
 # more generic rooms
-110,King Bed,,,,,,,Roombaht,
-111,King Bed Suite Mountain View,,,,,,,Roombaht,
+110,King Bed,,,,,,,,
+111,King Bed Suite Mountain View,,,,,,,,
 112,King Bed Suite Lake View Balcony,,Mat,Foo,,,,Foo Placer,hhh011
-113,King Bed Suite Balcony,,,,,,,Roombaht,
-114,King Bed Suite Balcony,,,,,,,Roombaht,
-115,King Bed Suite Balcony,,,,,,,Roombaht,
-116,Double Queen Beds Lake View Balcony,,,,,,,Roombaht,
-118,Double Queen Beds Lake View,Smoking,,,,,,Roombaht,
-119,King Bed Suite Balcony,,,,,,,Roombaht,
-120,King Bed Suite Lake View Balcony,"Smoking, ADA",,,,,,Roombaht,
-121,King Bed Lake View,Balcony,,,,,,Roombaht,
+113,King Bed Suite Balcony,,,,,,,,
+114,King Bed Suite Balcony,,,,,,,,
+115,King Bed Suite Balcony,,,,,,,,
+116,Double Queen Beds Lake View Balcony,,,,,,,,
+118,Double Queen Beds Lake View,Smoking,,,,,,,
+119,King Bed Suite Balcony,,,,,,,,
+120,King Bed Suite Lake View Balcony,"Smoking, ADA",,,,,,,
+121,King Bed Lake View,Balcony,,,,,,,
 # this room is a normal purchase that gets transferred
-200,King Bed Suite Lake View Balcony,,,,,,,Roombaht,
+200,King Bed Suite Lake View Balcony,,,,,,,,
 # comp'd suite that is also art
 201,King Bed Suite Mountain View,,Mop,Fob,Mop Buddy,,,Foo Placer,
-202,King Bed Balcony,,,,,,,Roombaht,
-203,Double Queen Beds Lake View Balcony,,,,,,,Roombaht,
-204,King Bed Lake View,,,,,,,Roombaht,
-205,King Bed Suite Mountain View,,,,,,,Roombaht,
-206,Double Queen Beds Lake View,,,,,,,Roombaht,
+202,King Bed Balcony,,,,,,,,
+203,Double Queen Beds Lake View Balcony,,,,,,,,
+204,King Bed Lake View,,,,,,,,
+205,King Bed Suite Mountain View,,,,,,,,
+206,Double Queen Beds Lake View,,,,,,,,

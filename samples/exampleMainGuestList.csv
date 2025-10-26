@@ -1,75 +1,75 @@
 ticket_code,last_name,first_name,email,product,transferred_from_code,transferred_from_email
 # manually placed in room 305
-aaa001,Bar,Foo,foo.bar@noop.com,Bally's - Standard 2 Queen (DTS),,
+aaa001,Bar,Foo,foo.bar@noop.com,04.2 Bally's - Standard 2 Queen (DTS),,
 # manually placed in room 306
-aaa002,Baz,Foo,foo.baz@noop.com,Bally's - Standard 2 Queen (DTS),,
+aaa002,Baz,Foo,foo.baz@noop.com,04.2 Bally's - Standard 2 Queen (DTS),,
 # these two should be auto placed
-aaa003,Bam,Foo,foo.bam@noop.com,Bally's - Standard King,,
-aaa004,Bat,Foo,foo.bat@noop.com,Bally's - Standard King (DTS),,
+aaa003,Bam,Foo,foo.bam@noop.com,01.1 Bally's - Standard King,,
+aaa004,Bat,Foo,foo.bat@noop.com,01.2 Bally's - Standard King (DTS),,
 # these two should be auto placed in queen room
-bbb001,Bam,Fob,fob.bam@noop.com,Bally's - Standard 2 Queen,,
-bbb002,Baz,Fob,fob.baz@noop.com,Bally's - Standard 2 Queen,,
+bbb001,Bam,Fob,fob.bam@noop.com,04.1 Bally's - Standard 2 Queen,,
+bbb002,Baz,Fob,fob.baz@noop.com,04.1 Bally's - Standard 2 Queen,,
 # normal placed art room(s)
-aaa005,Baa,Foo,foo.baa@noop.com,Bally's - Art Room King,,
-aaa006,Bac,Foo,foo.bac@noop.com,Bally's - Art Room 2 Queen,,
+aaa005,Baa,Foo,foo.baa@noop.com,02.1 Bally's - Art Room King,,
+aaa006,Bac,Foo,foo.bac@noop.com,05.1 Bally's - Art Room 2 Queen,,
 # someone transfering art room to an artist - original ticket placed
-aaa007,Bab,Foo,foo.bab@noop.com,Bally's - Art Room King,,
-aaa008,Bal,Foo,foo.bal@noop.com,Bally's - Art Room King,aaa007,
+aaa007,Bab,Foo,foo.bab@noop.com,02.1 Bally's - Art Room King,,
+aaa008,Bal,Foo,foo.bal@noop.com,02.1 Bally's - Art Room King,aaa007,
 # someone else transfering art room to an artist - transferred ticket placed
-aaa009,Bab,Foo,foo.bab@noop.com,Bally's - Art Room 2 Queen,,
-aaa010,Bal,Foo,foo.bal@noop.com,Bally's - Art Room 2 Queen,aaa009,
+aaa009,Bab,Foo,foo.bab@noop.com,05.1 Bally's - Art Room 2 Queen,,
+aaa010,Bal,Foo,foo.bal@noop.com,05.1 Bally's - Art Room 2 Queen,aaa009,
 # transferred to self bc why tf not
-aaa011,Bag,Foo,foo.bag@noop.com,Bally's - Standard 2 Queen,,
-aaa012,Bag,Foo,foo.bag@noop.com,Bally's - Standard 2 Queen,aaa011,
+aaa011,Bag,Foo,foo.bag@noop.com,04.1 Bally's - Standard 2 Queen,,
+aaa012,Bag,Foo,foo.bag@noop.com,04.1 Bally's - Standard 2 Queen,aaa011,
 # transferred twice
-aaa013,TxBar,Foo,foo.txbar@noop.com,Bally's - Standard 2 Queen,,
-aaa014,TxBaz,Foo,foo.txbaz@noop.com,Bally's - Standard 2 Queen,aaa013,
-aaa015,TxBam,Foo,foo.txbam@noop.com,Bally's - Standard 2 Queen,aaa014,
+aaa013,TxBar,Foo,foo.txbar@noop.com,04.1 Bally's - Standard 2 Queen,,
+aaa014,TxBaz,Foo,foo.txbaz@noop.com,04.1 Bally's - Standard 2 Queen,aaa013,
+aaa015,TxBam,Foo,foo.txbam@noop.com,04.1 Bally's - Standard 2 Queen,aaa014,
 # transfer for placed room
-aaa016,Kar,Foo,foo.kar@noop.com,Bally's - Standard 2 Queen,,
-aaa017,Jar,Foo,foo.jar@noop.com,Bally's - Standard 2 Queen,aaa016,
+aaa016,Kar,Foo,foo.kar@noop.com,04.1 Bally's - Standard 2 Queen,,
+aaa017,Jar,Foo,foo.jar@noop.com,04.1 Bally's - Standard 2 Queen,aaa016,
 # manually placed in room 305 but also bought another room of same type
-aaa018,Bar,Foo,foo.bar@noop.com,Bally's - Standard 2 Queen (DTS),,
+aaa018,Bar,Foo,foo.bar@noop.com,04.2 Bally's - Standard 2 Queen (DTS),,
 # manually placed in room 306 but also bought another room of different type
-aaa019,Baz,Foo,foo.baz@noop.com,Bally's - Standard King (DTS),,
+aaa019,Baz,Foo,foo.baz@noop.com,01.2 Bally's - Standard King (DTS),,
 # transferred placed room twice
-aaa020,TxBar,Fob,fob.txbar@noop.com,Bally's - Standard 2 Queen,,
-aaa021,TxBaz,Fod,fod.txbaz@noop.com,Bally's - Standard 2 Queen,aaa020,
-aaa022,TxBam,Fom,fom.txbam@noop.com,Bally's - Standard 2 Queen,aaa021,
+aaa020,TxBar,Fob,fob.txbar@noop.com,04.1 Bally's - Standard 2 Queen,,
+aaa021,TxBaz,Fod,fod.txbaz@noop.com,04.1 Bally's - Standard 2 Queen,aaa020,
+aaa022,TxBam,Fom,fom.txbam@noop.com,04.1 Bally's - Standard 2 Queen,aaa021,
 ## a special person with special rooms (for complex swap testing)
 # this room is placed in 410
-aaa023,Lobster,Rock,rock.lobster@noop.com,Bally's - Standard King,,
+aaa023,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 # these rooms are not placed
-aaa024,Lobster,Rock,rock.lobster@noop.com,Bally's - Standard King,,
-aaa025,Lobster,Rock,rock.lobster@noop.com,Bally's - Standard 2 Queen,,
+aaa024,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
+aaa025,Lobster,Rock,rock.lobster@noop.com,04.1 Bally's - Standard 2 Queen,,
 # just a buncha people in hard rock
-hhh000,Ham,Foo,foo.ham@noop.com,Nugget - Lakeview 2 Queens,,
-hhh001,Han,Foo,foo.han@noop.com,Nugget - Lakeview 2 Queens,,
-hhh002,Hao,Foo,foo.hao@noop.com,Nugget - Lakeview Balcony 2 Queens,,
-hhh003,Hap,Foo,foo.hap@noop.com,Nugget - Lakeview Balcony 2 Queens,,
-hhh004,Haq,Foo,foo.haq@noop.com,Nugget - Standard King,,
-hhh005,Har,Foo,foo.har@noop.com,Nugget - Standard King (DTS),,
-hhh006,Maa,Foo,foo.maa@noop.com,Nugget - King Pool View Balcony Suite,,
-hhh007,Mab,Foo,foo.mab@noop.com,Nugget - King Pool View Balcony Suite,,
+hhh000,Ham,Foo,foo.ham@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
+hhh001,Han,Foo,foo.han@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
+hhh002,Hao,Foo,foo.hao@noop.com,21.1 Nugget - Heavenly Lakeview Balcony 2 Queens,,
+hhh003,Hap,Foo,foo.hap@noop.com,21.1 Nugget - Heavenly Lakeview Balcony 2 Queens,,
+hhh004,Haq,Foo,foo.haq@noop.com,11.1 Nugget - Sunset King,,
+hhh005,Har,Foo,foo.har@noop.com,11.2 Nugget - Sunset King (DTS),,
+hhh006,Maa,Foo,foo.maa@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh007,Mab,Foo,foo.mab@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
 # transferring a hard rock room
-hhh008,Has,Foo,foo.has@noop.com,Nugget - King Mountain View Suite,,
-hhh009,Hat,Foo,foo.hat@noop.com,Nugget - King Mountain View Suite,hhh008,
+hhh008,Has,Foo,foo.has@noop.com,22.1 Nugget - Heavenly Mountain View King Suite,,
+hhh009,Hat,Foo,foo.hat@noop.com,22.1 Nugget - Heavenly Mountain View King Suite,hhh008,
 # purchased placed room
-hhh010,Hat,Fob,fob.hat@noop.com,Nugget - Lakeview 2 Queens,,
+hhh010,Hat,Fob,fob.hat@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
 # double transfer placed suite
-hhh011,Mat,Fob,fob.mat@noop.com,Nugget - King Lakeview Balcony Suite,,
-hhh012,Mat,Foz,foz.mat@noop.com,Nugget - King Lakeview Balcony Suite,hhh011,
-hhh013,Mat,Foo,foo.mat@noop.com,Nugget - King Lakeview Balcony Suite,hhh012,
+hhh011,Mat,Fob,fob.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh012,Mat,Foz,foz.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh011,
+hhh013,Mat,Foo,foo.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh012,
 # non-placed rooms
-hhh014,Mat,Fon,fon.mat@noop.com,Nugget - King Lakeview Balcony Suite,,
-hhh015,Map,Fon,fon.map@noop.com,Nugget - Lakeview King,,
+hhh014,Mat,Fon,fon.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh015,Map,Fon,fon.map@noop.com,13.1 Nugget - Sunset Lakeview King,,
 # non-placed transfer which will happen under update
-hhh016,Noo,Foo,foo.noo@noop.com,Nugget - Balcony King,,
+hhh016,Noo,Foo,foo.noo@noop.com,12.1 Nugget - Sunset Balcony King,,
 # placed transfer which will happen under update
-hhh017,Moo,Foo,foo.moo@noop.com,Nugget - Standard King,,
+hhh017,Moo,Foo,foo.moo@noop.com,11.1 Nugget - Sunset King,,
 # non-placed double transfer that will happen under initial and update
-hhh018,Moo,Aoo,aoo.moo@noop.com,Nugget - King Pool View Balcony Suite,,
-hhh019,Moo,Boo,boo.moo@noop.com,Nugget - King Pool View Balcony Suite,hhh018,
+hhh018,Moo,Aoo,aoo.moo@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh019,Moo,Boo,boo.moo@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh018,
 # non-placed rooms for high roller
-hhh020,Bar,Foo,foo.bar@noop.com,Nugget - King Pool View Balcony Suite,,
-hhh021,Bar,Foo,foo.bar@noop.com,Nugget - Lakeview 2 Queens,,
+hhh020,Bar,Foo,foo.bar@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh021,Bar,Foo,foo.bar@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
