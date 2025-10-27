@@ -52,7 +52,7 @@ def my_rooms(request):
             'hotels': roombaht_config.VISIBLE_HOTELS
         }
 
-        logger.debug("rooms for user %s: %s" % (email, rooms_mine))
+        logger.debug("rooms for user %s: %s", email, rooms_mine)
         return Response(data)
 
 
