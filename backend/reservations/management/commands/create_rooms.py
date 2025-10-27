@@ -2,6 +2,7 @@ import sys
 from fuzzywuzzy import fuzz
 from django.core.management.base import BaseCommand, CommandError
 from pydantic import ValidationError
+import reservations.config as roombaht_config
 from reservations.helpers import ingest_csv
 from reservations.models import Room, Guest, Staff
 from reservations.constants import ROOM_LIST
@@ -95,7 +96,7 @@ def create_rooms_main(cmd, args):
                (elem.placed_by == '' and args['blank_is_available']):
                 room.placed_by_roombot = True
                 room.is_available = True
-                if room.name_hotel == 'Ballys':
+                if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
                     room.is_swappable = True
 
             if room.name_take3 not in ROOM_LIST:

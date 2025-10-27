@@ -90,7 +90,7 @@ class Room(DirtyFieldsMixin, models.Model):
     guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return str(self.number)
+        return f"{self.name_hotel} {self.number}"
 
     @property
     def check_out(self):

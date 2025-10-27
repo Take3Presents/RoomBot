@@ -70,5 +70,5 @@ class Command(BaseCommand):
         except Staff.DoesNotExist:
             pass
 
-        self.stdout.write(f"User {guest.name},{adult} otp: {guest.jwt}, can login: {guest.can_login}, last login: {last_login}")
+        self.stdout.write(f"User {guest.name},{adult} otp: {guest.jwt} - can login: {guest.can_login}, last login: {last_login}")
         self.stdout.write(f"    rooms: {rooms}, tickets: {tickets}, onboarding sent: {onboarding}")

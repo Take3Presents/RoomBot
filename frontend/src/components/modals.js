@@ -51,9 +51,10 @@ export function ModalRequestSwap(props) {
         return;
     }
     axios.post(window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/swap_request/", {
-        jwt: jwt["jwt"],
-        number: row.number,
-	    contact_info: contacts
+      jwt: jwt["jwt"],
+      number: row.number,
+      hotel: row.name_hotel,
+      contact_info: contacts
     })
       .then(res => {
 	toast.success("Swap request sent.");
