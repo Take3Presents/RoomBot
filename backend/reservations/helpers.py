@@ -1,14 +1,17 @@
+from csv import DictReader, DictWriter
+from datetime import datetime
 import logging
 import os
 import random
 import re
 import sys
 
-from datetime import datetime
-from django.utils.dateparse import parse_date
-from csv import DictReader, DictWriter
+import dateparser
 from django.core.mail import EmailMessage, get_connection
+from django.utils.dateparse import parse_date
+
 import reservations.config as roombaht_config
+
 
 logging.basicConfig(stream=sys.stdout,
                     level=roombaht_config.LOGLEVEL)
@@ -34,67 +37,33 @@ def real_date(a_date: str, year=None):
     if a_date == '':
         raise ValueError("empty date string")
 
+    # Strip out strings "Early" and "Late"
+    a_date = re.sub(r'Early|Late', '', a_date, flags=re.IGNORECASE)
+
     year = year or datetime.now().year
+    dateparser_settings = {
+        'RETURN_AS_TIMEZONE_AWARE': True,
+        # 'PREFER_DATES_FROM': '',
+        'TIMEZONE': 'US/Pacific',
+        'STRICT_PARSING': True,
+    }
 
-    weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    parsed_datetime = dateparser.parse(
+        a_date,
+        languages=['en'],
+        settings=dateparser_settings,
+    )
 
-    # Normalize separators and split
-    normalized = a_date.replace('-', ' ').strip()
-    parts = normalized.split()
+    if parsed_datetime is None:
+        parsed_datetime = dateparser.parse(
+            f"{a_date} {year}",
+            languages=['en'],
+            settings=dateparser_settings,
+        )
+        if parsed_datetime is None:
+            raise ValueError(f"Could not parse date: {a_date}")
 
-    # Handle forms like "Mon 11/14" (or "Mon - 11/7" normalized above)
-    if len(parts) >= 2 and parts[0] in weekdays:
-        sub_date = parts[1]
-        sub_date_bits = sub_date.split('/')
-        if len(sub_date_bits) == 2:
-            month, day = sub_date_bits
-            try:
-                month_i = int(month)
-                day_i = int(day)
-            except ValueError:
-                raise ValueError(f"Unexpected numeric parts in date: {a_date}")
-            return parse_date(f"{year}-{month_i:02d}-{day_i:02d}")
-
-    # Handle forms like "Mon 11/14 Early" or "Mon 11/14 Late"
-    if len(parts) >= 3 and parts[0] in weekdays and parts[-1] in ['Early', 'Late']:
-        sub_date = parts[1]
-        sub_date_bits = sub_date.split('/')
-        if len(sub_date_bits) == 2:
-            month, day = sub_date_bits
-            try:
-                month_i = int(month)
-                day_i = int(day)
-            except ValueError:
-                raise ValueError(f"Unexpected numeric parts in date: {a_date}")
-            return parse_date(f"{year}-{month_i:02d}-{day_i:02d}")
-
-    # Handle YYYY/MM/DD explicitly (year-first with slashes)
-    m_iso_slash = re.search(r'^\s*(\d{4})/(\d{1,2})/(\d{1,2})\s*$', a_date)
-    if m_iso_slash:
-        yr = int(m_iso_slash.group(1))
-        month = int(m_iso_slash.group(2))
-        day = int(m_iso_slash.group(3))
-        return parse_date(f"{yr}-{month:02d}-{day:02d}")
-
-    # Handle MM/DD/YYYY explicitly
-    m = re.search(r'^\s*(\d{1,2})/(\d{1,2})/(\d{2,4})\s*$', a_date)
-    if m:
-        month = int(m.group(1))
-        day = int(m.group(2))
-        yr = int(m.group(3))
-        if yr < 100:
-            yr += 2000
-        return parse_date(f"{yr}-{month:02d}-{day:02d}")
-
-    # Handle MM/DD (no year) -- assume provided or current year
-    m2 = re.search(r'^\s*(\d{1,2})/(\d{1,2})\s*$', a_date)
-    if m2:
-        month = int(m2.group(1))
-        day = int(m2.group(2))
-        return parse_date(f"{year}-{month:02d}-{day:02d}")
-
-    # If we reach here, we don't know how to parse the input
-    raise ValueError(f"Unexpected date format {a_date}")
+    return parsed_datetime.date()
 
 
 def take3_date(date_obj):
