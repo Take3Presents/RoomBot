@@ -60,7 +60,7 @@ run() {
     manage room_show --hotel ballys 503 >> "$LOG" 2>&1
     manage user_show testadmin@example.com >> "$LOG" 2>&1
     manage user_show testuser1@example.com >> "$LOG" 2>&1
-    manage check --deploy >> "$LOG" 2>&1
+    manage check --fail-level=WARNING --deploy >> "$LOG" 2>&1
 
     # then run tests following typical import data flow
     manage flush --noinput >> "$LOG" 2>&1
@@ -81,7 +81,7 @@ run() {
     manage room_list -t Queen >> "$LOG" 2>&1
     manage room_show --hotel ballys 400 >> "$LOG" 2>&1
     manage room_show --hotel nugget 110 >> "$LOG" 2>&1
-    manage check --deploy >> "$LOG" 2>&1
+    manage check --fail-level=WARNING --deploy >> "$LOG" 2>&1
 
     SUCCESS="yea girl"
 }
