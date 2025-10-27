@@ -39,7 +39,6 @@ class Guest(models.Model):
 
     @staticmethod
     def chain(trans_code, guest_chain=None):
-        # Avoid mutable default argument; create a new list per call
         if guest_chain is None:
             guest_chain = []
         try:
@@ -185,6 +184,28 @@ class Room(DirtyFieldsMixin, models.Model):
             return product
 
         raise Exception('Should never not find a short product code tho')
+
+    @staticmethod
+    def derive_room_name(hotel, code):
+        code_bits = code.split('-')
+        a_hotel = hotel
+        # todo hotels should not be hardcoded everywhere
+        if hotel.lower().startswith('ballys'):
+            a_hotel = "bally's"
+
+        if len(code_bits) != 2 or (code_bits[0].lower() != 'ballys' and hotel == 'ballys') or \
+           (hotel.lower() == 'nugget' and code_bits[0].lower() != 'gnlt'):
+            raise Exception("Unexpected room code format ", code)
+
+        a_code = code_bits[1]
+        for a_room, a_detail in ROOM_LIST.items():
+            if a_hotel.lower() != a_detail['hotel'].lower():
+                continue
+
+            if a_code == a_detail.get('code', ''):
+                return a_room
+
+        return None
 
     @staticmethod
     def derive_hotel(product):

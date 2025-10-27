@@ -1,6 +1,9 @@
+# todo change key to be hotel-room type code
+#     and put room type name in values as it's own key
 ROOM_LIST = {
     'Queen': {
         'hotel': "Bally's",
+        'code': '2Q',
         'rooms': [
             "04.1 Bally's - Standard 2 Queen",
             "04.2 Bally's - Standard 2 Queen (DTS)",
@@ -11,52 +14,18 @@ ROOM_LIST = {
         ]
     },
 
-    "Double Queen Lakeview": {
-        'hotel': 'Nugget',
-        'rooms': [
-            '15.1 Nugget - Sunset Lakeview 2 Queens',
-            '15.2 Nugget - Sunset Lakeview 2 Queens (DTS)',
-            '20.1 Nugget - Heavenly Lakeview 2 Queens',
-            '20.2 Nugget - Heavenly Lakeview 2 Queens (DTS)'
-        ]
-    },
-
-    "Double Queen Lakeview Balcony": {
-        'hotel': 'Nugget',
-        'rooms': [
-            '21.1 Nugget - Heavenly Lakeview Balcony 2 Queens',
-            '21.2 Nugget - Heavenly Lakeview Balcony 2 Queens (DTS)'
-        ]
-    },
-
-    "Standard Double Queen": {
-        'hotel': 'Nugget',
-        'rooms': [
-            '14.1 Nugget - Sunset 2 Queen',
-            '14.2 Nugget - Sunset 2 Queen (DTS)'
-        ]
-    },
-
     'Queen Sierra Suite': {
         'hotel': "Bally's",
+        'code': 'CSZ2Q',
         'rooms': [
             "09.1 Bally's - Queen Sierra Suite",
             "09.2 Bally's - Queen Sierra Suite (DTS)"
         ]
     },
 
-    "Standard King": {
-        'hotel': 'Nugget',
-        'rooms': [
-            '11.1 Nugget - Sunset King',
-            '11.2 Nugget - Sunset King (DTS)',
-            '17.1 Nugget - Heavenly King',
-            '17.2 Nugget - Heavenly King (DTS)'
-        ]
-    },
-
     "King": {
         'hotel': "Bally's",
+        'code': 'K',
         'rooms': [
             "01.1 Bally's - Standard King",
             "01.2 Bally's - Standard King (DTS)",
@@ -67,34 +36,9 @@ ROOM_LIST = {
         ]
     },
 
-    "King Lakeview": {
-        'hotel': "Nugget",
-        'rooms': [
-            '13.1 Nugget - Sunset Lakeview King',
-            '13.2 Nugget - Sunset Lakeview King (DTS)'
-            '18.1 Nugget - Heavenly Lakeview King',
-            '18.2 Nugget - Heavenly Lakeview King (DTS)'
-        ]
-    },
-
-    "King Lakeview Balcony": {
-        'hotel': 'Nugget',
-        'rooms': [
-            '19.1 Nugget - Heavenly Lakeview Balcony King',
-            '19.2 Nugget - Heavenly Lakeview Balcony King (DTS)'
-        ]
-    },
-
-    "King Balcony": {
-        'hotel': 'Nugget',
-        'rooms': [
-            '12.1 Nugget - Sunset Balcony King',
-            '12.2 Nugget - Sunset Balcony King (DTS)'
-        ]
-    },
-
     'King Sierra Suite': {
         'hotel': "Bally's",
+        'code': 'CSZK',
         'rooms': [
             "08.1 Bally's - King Sierra Suite",
             "08.2 Bally's - King Sierra Suite (DTS)"
@@ -103,6 +47,7 @@ ROOM_LIST = {
 
     'Tahoe Suite': {
         'hotel': "Bally's",
+        'code': 'TZK',
         'rooms': [
             "10.1 Bally's - Tahoe Suite",
             "10.2 Bally's - Tahoe Suite (DTS)"
@@ -111,24 +56,68 @@ ROOM_LIST = {
 
     "Executive Suite": {
         'hotel': "Bally's",
+        'code': 'EZ',
         'rooms': [
             "07.1 Bally's - Executive King Suite",
             "07.2 Bally's - Executive King Suite (DTS)"
         ]
     },
 
+    "Double Queen Lakeview": {
+        'hotel': 'Nugget',
+        'code': 'QQLV',
+        'rooms': [
+            '15.1 Nugget - Sunset Lakeview 2 Queens',
+            '15.2 Nugget - Sunset Lakeview 2 Queens (DTS)',
+            '20.1 Nugget - Heavenly Lakeview 2 Queens',
+            '20.2 Nugget - Heavenly Lakeview 2 Queens (DTS)'
+        ]
+    },
+
+    "Standard Double Queen": {
+        'hotel': 'Nugget',
+        'code': 'QQS',
+        'rooms': [
+            '14.1 Nugget - Sunset 2 Queen',
+            '14.2 Nugget - Sunset 2 Queen (DTS)'
+        ]
+    },
+
+    "Standard King": {
+        'hotel': 'Nugget',
+        'code': 'KS',
+        'rooms': [
+            '11.1 Nugget - Sunset King',
+            '11.2 Nugget - Sunset King (DTS)',
+            '17.1 Nugget - Heavenly King',
+            '17.2 Nugget - Heavenly King (DTS)'
+        ]
+    },
+
+    "King Lakeview": {
+        'hotel': "Nugget",
+        'code': 'KLV',
+        'rooms': [
+            '13.1 Nugget - Sunset Lakeview King',
+            '13.2 Nugget - Sunset Lakeview King (DTS)'
+        ]
+    },
+
+    "King Balcony": {
+        'hotel': 'Nugget',
+        'code': 'KB',
+        'rooms': [
+            '12.1 Nugget - Sunset Balcony King',
+            '12.2 Nugget - Sunset Balcony King (DTS)'
+        ]
+    },
+
     "Sunset King Suite": {
         'hotel': "Nugget",
+        'code': 'SSK',
         'rooms': [
             "16.1 Nugget - Sunset King Suite",
             "16.2 Nugget - Sunset King Suite (DTS)"
-        ]
-    },
-    "Mountain View Suite Balcony": {
-        'hotel': "Nugget",
-        'rooms': [
-            "22.1 Nugget - Heavenly Mountain View King Suite",
-            "22.2 Nugget - Heavenly Mountain View King Suite (DTS)"
         ]
     }
 }

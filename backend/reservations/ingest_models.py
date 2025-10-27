@@ -61,6 +61,7 @@ class SecretPartyGuestIngest(BaseModel):
 class RoomPlacementListIngest(BaseModel):
     """Expected fields in the room spreadsheet
     NOTE: not all of these columns may be used!
+    todo: why is that ^^^^^
     """
     placement_verified: Optional[str] = Field(None, alias='Placement Verified')
     room: int = Field(alias='Room')
@@ -73,7 +74,9 @@ class RoomPlacementListIngest(BaseModel):
     check_in_date: Optional[str] = Field(alias='Check-In Date')
     check_out_date: Optional[str] = Field(alias='Check-Out Date')
     placed_by: Optional[str] = Field(alias='Placed By')
+    placed_by_roombaht: Optional[str] = Field(alias='Placed By Roombaht')
     ticket_id_in_secret_party: Optional[str] = Field(alias='Ticket ID in SecretParty')
+    room_code: Optional[str] = Field(alias='Room Code')
 
     class Config:
         populate_by_name = True  # allows data to be populated in the model by field names, not just aliases

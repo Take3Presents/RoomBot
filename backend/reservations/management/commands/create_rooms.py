@@ -12,9 +12,9 @@ def changes(room):
     msg = f"{room.name_hotel:9}{room.number:4} changes\n"
     for field, values in room.get_dirty_fields(verbose=True).items():
         saved = values['saved']
-        if room.guest and field == 'primary' :
+        if room.guest and field == 'primary':
             saved = f"{saved} (owner {room.guest.name})"
-        msg=f"{msg}    {field} {saved} -> {values['current']}\n"
+        msg = f"{msg}    {field} {saved} -> {values['current']}\n"
 
     return msg
 
@@ -32,7 +32,7 @@ def create_rooms_main(cmd, args):
     else:
         raise Exception(f"Unknown hotel name {args['hotel_name']} specified")
 
-    rooms={}
+    rooms = {}
     _rooms_fields, rooms_rows = ingest_csv(rooms_file)
     rooms_import_list = []
     dupe_rooms = []
@@ -72,14 +72,20 @@ def create_rooms_main(cmd, args):
             # * hotel
             # * room type
             # * initial roombaht based availability
-            room = Room(name_take3=elem.room_type,
+            room_name = Room.derive_room_name(hotel, elem.room_code)
+            if not room_name:
+                cmd.stderr.write(f"Unknown room code {elem.room_code} in {hotel} {elem.room}")
+                continue
+
+            room = Room(name_take3=room_name,
                         name_hotel=hotel,
                         number=elem.room)
 
             try:
                 features = elem.room_features.lower()
-            except KeyError as e:
+            except KeyError:
                 features = []
+
             if 'hearing accessible' in features:
                 room.is_hearing_accessible = True
             if 'ada' in features:
@@ -88,19 +94,12 @@ def create_rooms_main(cmd, args):
                 room.is_lakeview = True
             if 'mountainview' in features or 'mountain view' in features:
                 room.is_mountainview = True
-            if 'smoking' in features:
-                room.is_smoking = True
 
-            if (elem.placed_by == '' and args['blank_is_available']):
+            if elem.placed_by_roombaht:
                 room.placed_by_roombot = True
                 room.is_available = True
                 if room.name_hotel == 'Ballys':
                     room.is_swappable = True
-
-            if room.name_take3 not in ROOM_LIST:
-                room.is_special = True
-                room.is_available = False
-                room.is_swappable = False
 
         # check-in/check-out are only adjustable via room spreadsheet
         if elem.check_in_date == '' and args['default_check_in']:
@@ -137,7 +136,7 @@ def create_rooms_main(cmd, args):
 
             if room.primary != primary_name.title():
                 if room.guest and room.guest.transfer:
-                    trans_guest = room.guest.chain()[-1]
+                    trans_guest = room.guest.chain(room.guest.transfer)[-1]
                     if elem.ticket_id_in_secret_party == room.guest.ticket:
                         fuzziness = fuzz.ratio(room.primary, primary_name)
                         if fuzziness >= int(args['fuzziness']):
