@@ -42,34 +42,34 @@ aaa023,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 # these rooms are not placed
 aaa024,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 aaa025,Lobster,Rock,rock.lobster@noop.com,04.1 Bally's - Standard 2 Queen,,
-# just a buncha people in hard rock
+# just a buncha people in nugget
 hhh000,Ham,Foo,foo.ham@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
 hhh001,Han,Foo,foo.han@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
-hhh002,Hao,Foo,foo.hao@noop.com,21.1 Nugget - Heavenly Lakeview Balcony 2 Queens,,
-hhh003,Hap,Foo,foo.hap@noop.com,21.1 Nugget - Heavenly Lakeview Balcony 2 Queens,,
+hhh002,Hao,Foo,foo.hao@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
+hhh003,Hap,Foo,foo.hap@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
 hhh004,Haq,Foo,foo.haq@noop.com,11.1 Nugget - Sunset King,,
 hhh005,Har,Foo,foo.har@noop.com,11.2 Nugget - Sunset King (DTS),,
-hhh006,Maa,Foo,foo.maa@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
-hhh007,Mab,Foo,foo.mab@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
-# transferring a hard rock room
-hhh008,Has,Foo,foo.has@noop.com,22.1 Nugget - Heavenly Mountain View King Suite,,
-hhh009,Hat,Foo,foo.hat@noop.com,22.1 Nugget - Heavenly Mountain View King Suite,hhh008,
+hhh006,Maa,Foo,foo.maa@noop.com,17.1 Nugget - Heavenly King,,
+hhh007,Mab,Foo,foo.mab@noop.com,17.1 Nugget - Heavenly King,,
+# transferring a nugget room
+hhh008,Has,Foo,foo.has@noop.com,16.1 Nugget - Sunset King Suite,,
+hhh009,Hat,Foo,foo.hat@noop.com,16.1 Nugget - Sunset King Suite,hhh008,
 # purchased placed room
 hhh010,Hat,Fob,fob.hat@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
 # double transfer placed suite
-hhh011,Mat,Fob,fob.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
-hhh012,Mat,Foz,foz.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh011,
-hhh013,Mat,Foo,foo.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh012,
+hhh011,Mat,Fob,fob.mat@noop.com,16.1 Nugget - Sunset King Suite,,
+hhh012,Mat,Foz,foz.mat@noop.com,16.1 Nugget - Sunset King Suite,hhh011,
+hhh013,Mat,Foo,foo.mat@noop.com,16.1 Nugget - Sunset King Suite,hhh012,
 # non-placed rooms
-hhh014,Mat,Fon,fon.mat@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh014,Mat,Fon,fon.mat@noop.com,16.1 Nugget - Sunset King Suite,,
 hhh015,Map,Fon,fon.map@noop.com,13.1 Nugget - Sunset Lakeview King,,
 # non-placed transfer which will happen under update
 hhh016,Noo,Foo,foo.noo@noop.com,12.1 Nugget - Sunset Balcony King,,
 # placed transfer which will happen under update
 hhh017,Moo,Foo,foo.moo@noop.com,11.1 Nugget - Sunset King,,
 # non-placed double transfer that will happen under initial and update
-hhh018,Moo,Aoo,aoo.moo@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
-hhh019,Moo,Boo,boo.moo@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,hhh018,
+hhh018,Moo,Aoo,aoo.moo@noop.com,13.1 Nugget - Sunset Lakeview King,,
+hhh019,Moo,Boo,boo.moo@noop.com,13.1 Nugget - Sunset Lakeview King,hhh018,
 # non-placed rooms for high roller
-hhh020,Bar,Foo,foo.bar@noop.com,19.1 Nugget - Heavenly Lakeview Balcony King,,
+hhh020,Bar,Foo,foo.bar@noop.com,13.1 Nugget - Sunset Lakeview King,,
 hhh021,Bar,Foo,foo.bar@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,

@@ -7,20 +7,20 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 103,Double Queen Lakeview,,Staff,Staffy,,,,Foo Placer,,False,GNLT-QQLV
 104,Double Queen Lakeview,,Staff,Staffy,,,,Foo Placer,,False,GNLT-QQLV
 # a placed purchased room
-105,Standard Double Queen Beds,Balcony,Hat,Fob,,,,Foo Placer,hhh010,,False,GNLT-QQS
+105,Double Queen Lakeview,Balcony,Hat,Fob,,,,Foo Placer,hhh010,False,GNLT-QQLV
 # placed transfer
 107,Standard King,,,,,,,,,True,GNLT-KS
 # placed / compd room
 108,Standard King,Mountain View,Fop,Hat,,,,Foo Placer,,False,GNLT-KS
 # placed transfer
-109,Standard King,MountainView,Moo,Foo,,,,Foo Placer,hhh017,,False,GNLT-KS
+109,Standard King,MountainView,Moo,Foo,,,,Foo Placer,hhh017,False,GNLT-KS
 # more generic rooms
 110,Standard King,,,,,,,,,True,GNLT-KS
 111,Sunset King Suite,,,,,,,,,True,GNLT-SSK
 112,Sunset King Suite,,Mat,Foo,,,,Foo Placer,hhh011,True,GNLT-SSK
 113,Sunset King Suite,,,,,,,,,True,GNLT-SSK
 114,Sunset King Suite,,,,,,,,,True,GNLT-SSK
-115,Sunset King Suite,,,,,,,,,True,GNLT-SSK
+115,Sunset Lakeview King,,,,,,,,,True,GNLT-KLV
 116,Double Queen Lakeview Balcony,,,,,,,,,True,GNLT-QQLV
 118,Double Queen Lakeview,Smoking,,,,,,,,True,GNLT-QQLV
 119,Sunset King Suite,,,,,,,,,True,GNLT-SSK
