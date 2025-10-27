@@ -67,10 +67,8 @@ ROOM_LIST = {
         'hotel': 'Nugget',
         'code': 'QQLV',
         'rooms': [
-            '15.1 Nugget - Sunset Lakeview 2 Queens',
-            '15.2 Nugget - Sunset Lakeview 2 Queens (DTS)',
-            '20.1 Nugget - Heavenly Lakeview 2 Queens',
-            '20.2 Nugget - Heavenly Lakeview 2 Queens (DTS)'
+            '15.1 Nugget - Sunset Lakeview 2 Queen',
+            '15.2 Nugget - Sunset Lakeview 2 Queen (DTS)'
         ]
     },
 
@@ -88,9 +86,7 @@ ROOM_LIST = {
         'code': 'KS',
         'rooms': [
             '11.1 Nugget - Sunset King',
-            '11.2 Nugget - Sunset King (DTS)',
-            '17.1 Nugget - Heavenly King',
-            '17.2 Nugget - Heavenly King (DTS)'
+            '11.2 Nugget - Sunset King (DTS)'
         ]
     },
 

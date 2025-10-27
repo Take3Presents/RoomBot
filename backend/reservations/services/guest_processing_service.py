@@ -20,6 +20,7 @@ class GuestProcessingService:
         """
         room = None
 
+        logger.debug("Attempting to place new user with a %s", guest_obj.product)
         # First check if there's a placed room with matching sp_ticket_id
         try:
             placed_room = Room.objects.get(sp_ticket_id=guest_obj.ticket_code, guest=None)
@@ -51,6 +52,7 @@ class GuestProcessingService:
         already have a room and have received a transfer.
         """
         room = self.room_service.find_room(guest_obj.product)
+        logger.debug("Attempting to place existing user with a %s", guest_obj.product)
         if not room:
             logger.warning("No empty rooms for product %s available for %s",
                            guest_obj.product, guest_entries[0].email)
@@ -153,17 +155,21 @@ class GuestProcessingService:
 
                     if guest_entries.count() == 0:
                         # Transferring to new guest...
-                        logger.debug("Processing placed transfer %s (%s) from %s to (new guest) %s",
-                                     trans_code, ticket_code, existing_guest.email, guest_obj.email)
+                        logger.debug("Processing transfer of existing room %s (%s) from %s to (new guest) %s" \
+                                     " %s %s - %s",
+                                     trans_code, ticket_code, existing_guest.email, guest_obj.email,
+                                     existing_room.name_hotel, existing_room.number, existing_room.name_take3)
                         otp = phrasing()
                         self.guest_service.update_guest(guest_obj, otp,
                                                         existing_room,
                                                         og_guest=existing_guest)
                     else:
                         # Transferring to existing guest...
-                        logger.debug("Processing placed transfer %s (%s) from %s to %s",
+                        logger.debug("Processing transfer of existing room %s (%s) from %s to %s" \
+                                     " %s %s - %s",
                                      trans_code, ticket_code,
-                                     existing_guest.email, guest_obj.email)
+                                     existing_guest.email, guest_obj.email, existing_room.name_hotel,
+                                     existing_room.number, existing_room.name_take3)
                         # i think this will result in every jwt field being the same? guest entries
                         # are kept around as part of transfers (ticket/email uniq) and when someone
                         # has multiple rooms (email/room uniq)
@@ -186,13 +192,17 @@ class GuestProcessingService:
                     email_chain = ','.join([x.email for x in chain])
 
                     if guest_entries.count() == 0:
-                        logger.debug("Processing transfer %s (%s) from %s to (new guest) %s",
-                                     trans_code, ticket_code, email_chain, guest_obj.email)
+                        logger.debug("Processing transfer %s (%s) from %s to (new guest) %s" \
+                                     "%s %s - %s",
+                                     trans_code, ticket_code, email_chain, guest_obj.email,
+                                     transfer_room.name_hotel, transfer_room.number, transfer_room.name_take3)
                         otp = phrasing()
                         self.guest_service.update_guest(guest_obj, otp, transfer_room)
                     else:
-                        logger.debug("Processing transfer %s (%s) from %s to %s",
-                                     trans_code, ticket_code, email_chain, guest_obj.email)
+                        logger.debug("Processing transfer %s (%s) from %s to %s" \
+                                     "%s %s - %s",
+                                     trans_code, ticket_code, email_chain, guest_obj.email,
+                                     transfer_room.name_hotel, transfer_room.number, transfer_room.name_take3)
                         otp = guest_entries[0].jwt
                         self.guest_service.update_guest(guest_obj, otp, transfer_room)
 
