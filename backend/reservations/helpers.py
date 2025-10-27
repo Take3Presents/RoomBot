@@ -15,45 +15,87 @@ logging.basicConfig(stream=sys.stdout,
 
 logger = logging.getLogger(__name__)
 
+
 def real_date(a_date: str, year=None):
     """Convert string date into python date
 
     Args:
         a_date (str): date string,
-            expected format: "Mon - 11/7", "11/7"
+            expected formats supported: "Mon - 11/7", "Mon 11/14", "11/7", "11/14/2024", "2024/11/14"
         year (Optional[int]): year, in 4-digit format
             Allows specification of year, otherwise is in current year at runtime
     Returns:
         date: python `date` object
     """
+    if a_date is None:
+        raise ValueError("a_date is None")
+
+    a_date = str(a_date).strip()
+    if a_date == '':
+        raise ValueError("empty date string")
+
     year = year or datetime.now().year
-    date_bits = a_date.split(" ")
-    date = None
-    if len(date_bits) == 2 and \
-       date_bits[0] in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        sub_date = date_bits[1]
-        sub_date_bits = sub_date.split("/")
+
+    weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+    # Normalize separators and split
+    normalized = a_date.replace('-', ' ').strip()
+    parts = normalized.split()
+
+    # Handle forms like "Mon 11/14" (or "Mon - 11/7" normalized above)
+    if len(parts) >= 2 and parts[0] in weekdays:
+        sub_date = parts[1]
+        sub_date_bits = sub_date.split('/')
         if len(sub_date_bits) == 2:
-            date = sub_date
+            month, day = sub_date_bits
+            try:
+                month_i = int(month)
+                day_i = int(day)
+            except ValueError:
+                raise ValueError(f"Unexpected numeric parts in date: {a_date}")
+            return parse_date(f"{year}-{month_i:02d}-{day_i:02d}")
 
-    elif len(date_bits) == 3 and \
-         date_bits[0] in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] and \
-         date_bits[2] in ['Early', 'Late']:
-        sub_date = date_bits[1]
-        sub_date_bits = sub_date.split("/")
+    # Handle forms like "Mon 11/14 Early" or "Mon 11/14 Late"
+    if len(parts) >= 3 and parts[0] in weekdays and parts[-1] in ['Early', 'Late']:
+        sub_date = parts[1]
+        sub_date_bits = sub_date.split('/')
         if len(sub_date_bits) == 2:
-            date = sub_date
+            month, day = sub_date_bits
+            try:
+                month_i = int(month)
+                day_i = int(day)
+            except ValueError:
+                raise ValueError(f"Unexpected numeric parts in date: {a_date}")
+            return parse_date(f"{year}-{month_i:02d}-{day_i:02d}")
 
-    elif len(a_date.split('/')) == 3:
-        r_date = re.search(r'(\d+)/(\d+)/(\d+)', a_date)
-        if r_date:
-            return parse_date(f"{r_date[1]}-{r_date[2]}-{r_date[3]}")
+    # Handle YYYY/MM/DD explicitly (year-first with slashes)
+    m_iso_slash = re.search(r'^\s*(\d{4})/(\d{1,2})/(\d{1,2})\s*$', a_date)
+    if m_iso_slash:
+        yr = int(m_iso_slash.group(1))
+        month = int(m_iso_slash.group(2))
+        day = int(m_iso_slash.group(3))
+        return parse_date(f"{yr}-{month:02d}-{day:02d}")
 
-    if not date:
-        raise Exception(f"Unexpected date format {a_date}")
+    # Handle MM/DD/YYYY explicitly
+    m = re.search(r'^\s*(\d{1,2})/(\d{1,2})/(\d{2,4})\s*$', a_date)
+    if m:
+        month = int(m.group(1))
+        day = int(m.group(2))
+        yr = int(m.group(3))
+        if yr < 100:
+            yr += 2000
+        return parse_date(f"{yr}-{month:02d}-{day:02d}")
 
-    month, day = date.lstrip().split('/')
-    return parse_date(f"{year}-{month}-{day}")
+    # Handle MM/DD (no year) -- assume provided or current year
+    m2 = re.search(r'^\s*(\d{1,2})/(\d{1,2})\s*$', a_date)
+    if m2:
+        month = int(m2.group(1))
+        day = int(m2.group(2))
+        return parse_date(f"{year}-{month:02d}-{day:02d}")
+
+    # If we reach here, we don't know how to parse the input
+    raise ValueError(f"Unexpected date format {a_date}")
+
 
 def take3_date(date_obj):
     """Converts date string "mm-dd-yyyy" to "day - mm/dd"
