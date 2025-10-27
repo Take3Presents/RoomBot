@@ -21,10 +21,16 @@ class GuestManagementService:
             logger.debug("Found existing ticket %s for %s", ticket_code, email)
 
             if guest.room_number:
-                if guest.room_number == room.number:
+                if guest.room_number == room.number and room.guest == guest:
                     logger.debug("Existing guest %s already associated with room %s (%s)",
                                  email, room.number, room.name_take3)
                     return
+                elif guest.room_number == room.number and room.guest is None:
+                    # Guest has room_number set but room doesn't have guest - fix the association
+                    logger.info("Fixing incomplete association: guest %s has room %s but room missing guest reference",
+                                email, room.number)
+                    # Don't return - let the code below fix room.guest
+                    guest_changed = False  # Guest record is fine, just fix room
                 else:
                     # transfers for placed users
                     logger.warning("Existing guest %s not moving from %s to %s (%s)",
@@ -76,10 +82,13 @@ class GuestManagementService:
                          room.guest.email, room.name_hotel, room.number)
             room.guest.save()
 
-        # update sp_ticket_id for placed rooms
-        if room.is_placed \
-           and room.sp_ticket_id \
-           and room.sp_ticket_id != guest.ticket:
+        if not room.sp_ticket_id:
+            # Set sp_ticket_id if it's missing
+            logger.debug("Setting room %s sp_ticket_id to %s",
+                         room.number, guest.ticket)
+            room.sp_ticket_id = guest.ticket
+        elif room.sp_ticket_id != guest.ticket:
+            # Update sp_ticket_id if it doesn't match (transfer scenario)
             logger.debug("Updating room %s sp_ticket_id %s -> %s",
                          room.number, room.sp_ticket_id, guest.ticket)
             room.sp_ticket_id = guest.ticket

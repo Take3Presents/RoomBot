@@ -348,9 +348,13 @@ class TestGuestProcessingService(TestCase):
     def setUp(self):
         self.service = GuestProcessingService()
 
-    @patch('reservations.services.guest_processing_service.Guest.objects')
-    def test_handle_new_guest(self, mock_guest_objects):
-        mock_guest_objects.filter.return_value.count.return_value = 0
+    @patch('reservations.services.guest_processing_service.Room')
+    def test_handle_new_guest(self, mock_room_model):
+        # Setup DoesNotExist exception for Room model
+        mock_room_model.DoesNotExist = type('DoesNotExist', (Exception,), {})
+
+        # Mock Room.objects.get to raise DoesNotExist (no placed room with this ticket)
+        mock_room_model.objects.get.side_effect = mock_room_model.DoesNotExist
 
         with patch.object(self.service.room_service, 'find_room') as mock_find_room:
             mock_room = Mock()
@@ -361,29 +365,40 @@ class TestGuestProcessingService(TestCase):
                 room_counts = Mock()
 
                 guest_obj = Mock()
+                guest_obj.ticket_code = "T123"
                 guest_obj.product = "Standard Room"
                 guest_obj.email = "new@example.com"
 
                 self.service._handle_new_guest(guest_obj, room_counts)
 
+                # Should check for placed room first, then fall back to find_room
+                mock_room_model.objects.get.assert_called_once_with(sp_ticket_id="T123", guest=None)
                 mock_find_room.assert_called_once_with("Standard Room")
                 mock_update_guest.assert_called_once()
                 room_counts.allocated.assert_called_once_with("Standard")
 
-    @patch('reservations.services.guest_processing_service.Guest.objects')
-    def test_handle_new_guest_no_room(self, mock_guest_objects):
+    @patch('reservations.services.guest_processing_service.Room')
+    def test_handle_new_guest_no_room(self, mock_room_model):
+        # Setup DoesNotExist exception
+        mock_room_model.DoesNotExist = type('DoesNotExist', (Exception,), {})
+        mock_room_model.short_product_code.return_value = "Standard"
+
+        # Mock Room.objects.get to raise DoesNotExist (no placed room)
+        mock_room_model.objects.get.side_effect = mock_room_model.DoesNotExist
+
         with patch.object(self.service.room_service, 'find_room', return_value=None):
-            with patch('reservations.services.guest_processing_service.Room.short_product_code') as mock_short_code:
-                mock_short_code.return_value = "Standard"
+            room_counts = Mock()
+            guest_obj = Mock()
+            guest_obj.ticket_code = "T456"
+            guest_obj.product = "Standard Room"
+            guest_obj.email = "new@example.com"
 
-                room_counts = Mock()
-                guest_obj = Mock()
-                guest_obj.product = "Standard Room"
-                guest_obj.email = "new@example.com"
+            self.service._handle_new_guest(guest_obj, room_counts)
 
-                self.service._handle_new_guest(guest_obj, room_counts)
-
-                room_counts.shortage.assert_called_once_with("Standard")
+            # Should check for placed room, then try find_room, then shortage
+            mock_room_model.objects.get.assert_called_once_with(sp_ticket_id="T456", guest=None)
+            mock_room_model.short_product_code.assert_called_once_with("Standard Room")
+            room_counts.shortage.assert_called_once_with("Standard")
 
     @patch('reservations.services.guest_processing_service.Guest.objects')
     def test_process_guest_entries_orchestration(self, mock_guest_objects):

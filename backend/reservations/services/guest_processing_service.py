@@ -18,7 +18,22 @@ class GuestProcessingService:
         A guest is not in the system, due to a non-placed room
         purchase or receiving a transfered room.
         """
-        room = self.room_service.find_room(guest_obj.product)
+        room = None
+
+        # First check if there's a placed room with matching sp_ticket_id
+        try:
+            placed_room = Room.objects.get(sp_ticket_id=guest_obj.ticket_code, guest=None)
+            logger.info("Found placed room %s %s for new guest %s with ticket %s",
+                       placed_room.name_hotel, placed_room.number, guest_obj.email, guest_obj.ticket_code)
+            room = placed_room
+        except Room.DoesNotExist:
+            # No placed room found, find available room
+            room = self.room_service.find_room(guest_obj.product)
+        except Room.MultipleObjectsReturned:
+            logger.error("Multiple rooms with sp_ticket_id %s found, using room assignment service",
+                        guest_obj.ticket_code)
+            room = self.room_service.find_room(guest_obj.product)
+
         if not room:
             logger.warning("No empty rooms for product %s available for %s",
                            guest_obj.product, guest_obj.email)
