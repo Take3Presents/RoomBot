@@ -1,6 +1,7 @@
 import logging
 from fuzzywuzzy import fuzz
 from ..models import Guest, Room
+from reservations.config import VISIBLE_HOTELS
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class GuestManagementService:
                          email, room.name_hotel, room.number, room.name_take3)
             guest_changed = True
 
-        if room.name_hotel == 'Ballys':
+        if room.name_hotel in VISIBLE_HOTELS:
             guest.can_login = True
             guest_changed = True
 

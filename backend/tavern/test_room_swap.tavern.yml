@@ -64,6 +64,11 @@ stages:
                 swaps_enabled:
                   type: "bool"
                   required: true
+                hotels:
+                  type: "seq"
+                  sequence:
+                    - type: "str"
+                  required: true
                 rooms:
                   type: "seq"
                   sequence:
@@ -117,17 +122,40 @@ stages:
         content-type: "application/json"
     response:
       status_code: 200
-      json:
-        rooms:
-          - number: 500
-            type: "Queen"
-            swappable: true
-            cooldown: false
-          - number: 505
-            type: "Queen"
-            swappable: false
-            cooldown: false
-        swaps_enabled: true
+      verify_response_with:
+        - function: tavern.helpers:validate_pykwalify
+          extra_kwargs:
+            schema:
+              type: "map"
+              mapping:
+                swaps_enabled:
+                  type: "bool"
+                  required: true
+                hotels:
+                  type: "seq"
+                  sequence:
+                    - type: "str"
+                  required: true
+                rooms:
+                  type: "seq"
+                  sequence:
+                    - type: "map"
+                      mapping:
+                        number:
+                          type: "int"
+                          required: true
+                        type:
+                          type: "str"
+                          required: true
+                        swappable:
+                          type: "bool"
+                          required: true
+                        cooldown:
+                          type: "bool"
+                          required: true
+                        name_hotel:
+                          type: "str"
+                          required: true
 
   - name: "need auth to request swap"
     request:
@@ -173,6 +201,7 @@ stages:
         jwt: "{jwt_token}"
         number: "69"
         contact_info: "some words"
+        hotel: "Ballys"
       headers:
         content-type: "application/json"
     response:
@@ -186,6 +215,7 @@ stages:
         jwt: "{jwt_token}"
         number: "502"
         contact_info: "some words"
+        hotel: "Ballys"
       headers:
         content-type: "application/json"
     response:
@@ -199,6 +229,7 @@ stages:
         jwt: "{jwt_token}"
         number: "503"
         contact_info: "some words"
+        hotel: "Ballys"
       headers:
         content-type: "application/json"
     response:
@@ -212,6 +243,7 @@ stages:
         jwt: "{jwt_token}"
         number: "{room_id}"
         contact_info: "some words"
+        hotel: "Ballys"
       headers:
         content-type: "application/json"
     response:
@@ -259,13 +291,40 @@ stages:
         content-type: "application/json"
     response:
       status_code: 200
-      json:
-        rooms:
-          - number: 501
-            type: "Queen"
-            swappable: true
-            cooldown: false
-        swaps_enabled: true
+      verify_response_with:
+        - function: tavern.helpers:validate_pykwalify
+          extra_kwargs:
+            schema:
+              type: "map"
+              mapping:
+                swaps_enabled:
+                  type: "bool"
+                  required: true
+                hotels:
+                  type: "seq"
+                  sequence:
+                    - type: "str"
+                  required: true
+                rooms:
+                  type: "seq"
+                  sequence:
+                    - type: "map"
+                      mapping:
+                        number:
+                          type: "int"
+                          required: true
+                        type:
+                          type: "str"
+                          required: true
+                        swappable:
+                          type: "bool"
+                          required: true
+                        cooldown:
+                          type: "bool"
+                          required: true
+                        name_hotel:
+                          type: "str"
+                          required: true
 
   - name: "but what if a swap but not actually my room"
     request:
@@ -425,17 +484,40 @@ stages:
         content-type: "application/json"
     response:
       status_code: 200
-      json:
-        rooms:
-          - number: 501
-            type: "Queen"
-            swappable: false
-            cooldown: true
-          - number: 505
-            type: "Queen"
-            swappable: false
-            cooldown: false
-        swaps_enabled: true
+      verify_response_with:
+        - function: tavern.helpers:validate_pykwalify
+          extra_kwargs:
+            schema:
+              type: "map"
+              mapping:
+                swaps_enabled:
+                  type: "bool"
+                  required: true
+                hotels:
+                  type: "seq"
+                  sequence:
+                    - type: "str"
+                  required: true
+                rooms:
+                  type: "seq"
+                  sequence:
+                    - type: "map"
+                      mapping:
+                        number:
+                          type: "int"
+                          required: true
+                        type:
+                          type: "str"
+                          required: true
+                        swappable:
+                          type: "bool"
+                          required: true
+                        cooldown:
+                          type: "bool"
+                          required: true
+                        name_hotel:
+                          type: "str"
+                          required: true
 
   - name: "retrieve updated list of second users rooms"
     request:
@@ -447,10 +529,37 @@ stages:
         content-type: "application/json"
     response:
       status_code: 200
-      json:
-        rooms:
-          - number: 500
-            type: "Queen"
-            swappable: false
-            cooldown: true
-        swaps_enabled: true
+      verify_response_with:
+        - function: tavern.helpers:validate_pykwalify
+          extra_kwargs:
+            schema:
+              type: "map"
+              mapping:
+                swaps_enabled:
+                  type: "bool"
+                  required: true
+                hotels:
+                  type: "seq"
+                  sequence:
+                    - type: "str"
+                  required: true
+                rooms:
+                  type: "seq"
+                  sequence:
+                    - type: "map"
+                      mapping:
+                        number:
+                          type: "int"
+                          required: true
+                        type:
+                          type: "str"
+                          required: true
+                        swappable:
+                          type: "bool"
+                          required: true
+                        cooldown:
+                          type: "bool"
+                          required: true
+                        name_hotel:
+                          type: "str"
+                          required: true
