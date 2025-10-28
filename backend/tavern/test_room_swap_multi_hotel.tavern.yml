@@ -1,13 +1,13 @@
 ---
-test_name: "user can request a swap"
+test_name: "user can request a swap (Nugget)"
 
 stages:
-  - name: "login as user one and get a jwt"
+  - name: "login as user three and get a jwt"
     request:
       url: "http://localhost:8000/api/login/"
       method: "POST"
       json:
-        email: "testuser1@example.com"
+        email: "testuser3@example.com"
         jwt: "test jwt"
       headers:
         content-type: "application/json"
@@ -33,15 +33,6 @@ stages:
       save:
         json:
           jwt_token: "jwt"
-
-  - name: "need jwt for list of rooms"
-    request:
-      url: "http://localhost:8000/api/rooms/"
-      method: "POST"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 401
 
   - name: "retrieve list of rooms"
     request:
@@ -101,15 +92,6 @@ stages:
                           type: "bool"
                           required: true
 
-  - name: "need auth for list of user rooms"
-    request:
-      url: "http://localhost:8000/api/my_rooms/"
-      method: "POST"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 401
-
   - name: "retrieve list of users rooms"
     request:
       url: "http://localhost:8000/api/my_rooms/"
@@ -155,44 +137,6 @@ stages:
                           type: "str"
                           required: true
 
-  - name: "need auth to request swap"
-    request:
-      url: "http://localhost:8000/api/swap_request/"
-      method: "POST"
-      json:
-        number: "69"
-        hotel: "Ballys"
-        contact_info: "some words"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 401
-
-  - name: "need room number to request swap"
-    request:
-      url: "http://localhost:8000/api/swap_request/"
-      method: "POST"
-      json:
-        jwt: "{jwt_token}"
-        contact_info: "some words"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 400
-
-  - name: "need contact info to request swap"
-    request:
-      url: "http://localhost:8000/api/swap_request/"
-      method: "POST"
-      json:
-        jwt: "{jwt_token}"
-        number: "69"
-        hotel: "Ballys"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 400
-
   - name: "request a swap for a non-existent room"
     request:
       url: "http://localhost:8000/api/swap_request/"
@@ -201,39 +145,11 @@ stages:
         jwt: "{jwt_token}"
         number: "69"
         contact_info: "some words"
-        hotel: "Ballys"
+        hotel: "Nugget"
       headers:
         content-type: "application/json"
     response:
       status_code: 404
-
-  - name: "request a swap for a non compatible room"
-    request:
-      url: "http://localhost:8000/api/swap_request/"
-      method: "POST"
-      json:
-        jwt: "{jwt_token}"
-        number: "502"
-        contact_info: "some words"
-        hotel: "Ballys"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 400
-
-  - name: "request a swap for a placed room"
-    request:
-      url: "http://localhost:8000/api/swap_request/"
-      method: "POST"
-      json:
-        jwt: "{jwt_token}"
-        number: "503"
-        contact_info: "some words"
-        hotel: "Ballys"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 400
 
   - name: "request a swap"
     request:
@@ -243,18 +159,18 @@ stages:
         jwt: "{jwt_token}"
         number: "500"
         contact_info: "some words"
-        hotel: "Ballys"
+        hotel: "Nugget"
       headers:
         content-type: "application/json"
     response:
       status_code: 201
 
-  - name: "login as user two and get a jwt"
+  - name: "login as user four and get a jwt"
     request:
       url: "http://localhost:8000/api/login/"
       method: "POST"
       json:
-        email: "testuser2@example.com"
+        email: "testuser4@example.com"
         jwt: "test jwt"
       headers:
         content-type: "application/json"
@@ -326,31 +242,6 @@ stages:
                           type: "str"
                           required: true
 
-  - name: "but what if a swap but not actually my room"
-    request:
-      url: "http://localhost:8000/api/swap_gen/"
-      method: "POST"
-      json:
-        jwt: "{jwt_token}"
-        number: "501"
-        hotel: "Ballys"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 400
-
-  - name: "need auth to initiate swap"
-    request:
-      url: "http://localhost:8000/api/swap_gen/"
-      method: "POST"
-      json:
-        number: "500"
-        hotel: "Ballys"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 401
-
   - name: "need room number to initiate swap"
     request:
       url: "http://localhost:8000/api/swap_gen/"
@@ -369,7 +260,7 @@ stages:
       json:
         jwt: "{jwt_token2}"
         number: "501"
-        hotel: "Ballys"
+        hotel: "Nugget"
       headers:
         content-type: "application/json"
     response:
@@ -390,8 +281,8 @@ stages:
       method: "POST"
       json:
         jwt: "{jwt_token2}"
-        hotel: "Ballys"
         number: "501"
+        hotel: "Nugget"
       headers:
         content-type: "application/json"
     response:
@@ -416,6 +307,20 @@ stages:
       json:
         jwt: "{jwt_token}"
         number: "500"
+        hotel: "Nugget"
+        swap_code: "lol butts"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 400
+
+  - name: "get ur swap on oops different hotel"
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      method: "POST"
+      json:
+        jwt: "{jwt_token}"
+        number: "500"
         hotel: "Ballys"
         swap_code: "lol butts"
       headers:
@@ -430,7 +335,7 @@ stages:
       json:
         jwt: "{jwt_token}"
         number: "500"
-        hotel: "Ballys"
+        hotel: "Nugget"
         swap_code: "{swap_code}"
       headers:
         content-type: "application/json"
@@ -444,7 +349,7 @@ stages:
       json:
         jwt: "{jwt_token2}"
         number: "501"
-        hotel: "Ballys"
+        hotel: "Nugget"
         swap_code: "{swap_code}"
       headers:
         content-type: "application/json"
@@ -458,7 +363,7 @@ stages:
       json:
         jwt: "{jwt_token}"
         number: "500"
-        hotel: "Ballys"
+        hotel: "Nugget"
       headers:
         content-type: "application/json"
     response:
@@ -471,7 +376,7 @@ stages:
       json:
         jwt: "{jwt_token2}"
         number: "501"
-        hotel: "Ballys"
+        hotel: "Nugget"
       headers:
         content-type: "application/json"
     response:

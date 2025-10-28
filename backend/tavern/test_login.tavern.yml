@@ -161,18 +161,6 @@ stages:
                   type: "str"
                   required: true
 
-  - name: "nugget user cannot log in"
-    request:
-      url: "http://localhost:8000/api/login/"
-      method: "POST"
-      json:
-        email: "testuser3@example.com"
-        jwt: "test jwt"
-      headers:
-        content-type: "application/json"
-    response:
-      status_code: 401
-
   - name: "can request pw reset for valid user"
     request:
       url: "http://localhost:8000/api/login_reset/"

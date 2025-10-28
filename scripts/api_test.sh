@@ -52,6 +52,7 @@ run() {
     manage loaddata test_users
     manage loaddata test_rooms
     "$TAVERN" backend/tavern/test_room_swap.tavern.yml
+    "$TAVERN" backend/tavern/test_room_swap_multi_hotel.tavern.yml
     "$TAVERN" backend/tavern/test_admin.tavern.yml
     "$TAVERN" backend/tavern/test_reports.tavern.yml
 

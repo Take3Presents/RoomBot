@@ -146,13 +146,15 @@ export function ModalEnterCode(props) {
   const handleShow = () => setShow(true);
   const [phrase, setPhrase] = useState("");
   const jwt = JSON.parse(localStorage.getItem('jwt'));
-  const row = props.row.number;
+  const number = props.row.number;
+  const hotel = props.row.hotel;
 
   const handleAPICall = (code) => {
     axios.post(window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/swap_it_up/", {
         jwt: jwt['jwt'],
-        number: row,
-        swap_code: code
+        number: number,
+        swap_code: code,
+        hotel: hotel
       })
       .then(res => {
         setPhrase(res.data);
@@ -235,7 +237,8 @@ export function ModalCreateCode(props) {
   const [phrase, setPhrase] = useState("");
 
   const jwt = JSON.parse(localStorage.getItem('jwt'));
-  const row = props.row.number;
+  const number = props.row.number;
+  const hotel = props.row.hotel;
   const handleClose = () => {
     if ( refreshTimer !== null ) {
       clearInterval(refreshTimer);
@@ -251,7 +254,7 @@ export function ModalCreateCode(props) {
 	  .then(res => {
 	    var hasSwapped = true;
 	    res.data.rooms.forEach((room) => {
-	      if (room.number == row) {
+	      if (room.number == number) {
 		hasSwapped = false;
 	      }
 	    });
@@ -267,7 +270,8 @@ export function ModalCreateCode(props) {
 
     axios.post(window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/swap_gen/", {
             jwt: jwt['jwt'],
-            number: {row},
+            number: {number},
+            hotel: {hotel},
       })
       .then(res => {
         const phrase = res.data.swap_phrase;

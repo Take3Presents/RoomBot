@@ -32,7 +32,6 @@ urlpatterns = [
     re_path(r'^api/guests/$', guests.guest_list),
     re_path(r'^api/guests/([0-9])$', guests.guest_detail),
     re_path(r'^api/rooms/$', rooms.room_list),
-    re_path(r'^api/rooms/([0-9]+)$', rooms.room_detail),
     re_path(r'^api/login/$', login.login),
     re_path(r'^api/my_rooms/$', rooms.my_rooms),
     re_path(r'^api/swap_gen/$', rooms.swap_gen),

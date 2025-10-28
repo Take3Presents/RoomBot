@@ -18,14 +18,16 @@ usage() {
 }
 
 start() {
-    uv run --env-file "${ROOTDIR}/test.env" --active coverage run --data-file "$COVERAGEFILE" \
+    cd "${BACKEND}"
+    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage run --data-file "$COVERAGEFILE" \
 		--source="reservations,party,waittime" \
-		"${BACKEND}/manage.py" migrate >> "$LOG" 2>&1
-    nohup uv run --env-file "${ROOTDIR}/test.env" --active coverage run --data-file "$COVERAGEFILE" \
+		manage.py migrate >> "$LOG" 2>&1
+    nohup uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml"  --group dev --env-file "${ROOTDIR}/test.env" coverage run --data-file "$COVERAGEFILE" \
 	  --source="backend" --append \
-	  "${BACKEND}/manage.py" \
+	  manage.py \
 	  runserver --noreload --nothreading 0.0.0.0:8000 \
 	  < /dev/null >> "$LOG" 2>&1 & disown
+    cd "${ROOTDIR}"
 }
 
 stop() {
@@ -43,7 +45,7 @@ stop() {
 }
 
 report() {
-    coverage report --data-file "$COVERAGEFILE" -m --skip-covered
+        uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage report --data-file "$COVERAGEFILE" -m --skip-covered
 }
 
 if [ $# == 0 ] ; then
@@ -53,7 +55,6 @@ fi
 ACTION="$1"
 shift
 
-. "${BACKEND}/.venv/bin/activate"
 if [ "$ACTION" == "start" ] ; then
     start
 elif [ "$ACTION" == "stop" ] ; then
