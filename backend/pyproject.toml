@@ -14,6 +14,7 @@ dependencies = [
     "charset-normalizer==2.1.1",
     "curtsies==0.4.3",
     "cwcwidth==0.1.7",
+    "dateparser>=1.2.0",
     "django==4.1.1",
     "django-cors-headers==3.13.0",
     "django-dirtyfields==1.9.2",

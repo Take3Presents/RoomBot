@@ -98,12 +98,21 @@ class Room(DirtyFieldsMixin, models.Model):
 
     @check_out.setter
     def check_out(self, value):
+        # Accept datetime.date directly
         if isinstance(value, datetime.date):
             self._check_out = value
-        elif value and value != '':
-            self._check_out = real_date(value)
-        elif value == '':
+            return
+
+        # Treat explicit empty string / None as clearing the value
+        if value in (None, ''):
             self._check_out = None
+            return
+
+        # Otherwise attempt to parse; raise on failure to avoid silent no-ops
+        parsed = real_date(value)
+        if parsed is None:
+            raise ValueError(f"Could not parse check_out value: {value!r}")
+        self._check_out = parsed
 
     @property
     def check_in(self):
@@ -111,14 +120,21 @@ class Room(DirtyFieldsMixin, models.Model):
 
     @check_in.setter
     def check_in(self, value):
+        # Accept datetime.date directly
         if isinstance(value, datetime.date):
             self._check_in = value
+            return
 
-        elif value and value != '':
-            self._check_in = real_date(value)
-
-        elif value == '':
+        # Treat explicit empty string / None as clearing the value
+        if value in (None, ''):
             self._check_in = None
+            return
+
+        # Otherwise attempt to parse; raise on failure to avoid silent no-ops
+        parsed = real_date(value)
+        if parsed is None:
+            raise ValueError(f"Could not parse check_in value: {value!r}")
+        self._check_in = parsed
 
     def swappable(self):
         return self.guest \
@@ -196,7 +212,7 @@ class Room(DirtyFieldsMixin, models.Model):
     def swap(room_one, room_two):
         if room_two.name_take3 != room_two.name_take3:
             logger.warning("Attempt to swap mismatched room types %s (%s) - %s (%s)",
-                           room_one.number, room_two.name_take3,
+                           room_one.number, room_one.name_take3,
                            room_two.number, room_two.name_take3)
             raise SwapError('mismatched room type')
 

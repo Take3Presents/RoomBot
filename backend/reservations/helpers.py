@@ -1,59 +1,70 @@
+from csv import DictReader, DictWriter
+from datetime import datetime
 import logging
 import os
 import random
 import re
 import sys
 
-from datetime import datetime
-from django.utils.dateparse import parse_date
-from csv import DictReader, DictWriter
+import dateparser
 from django.core.mail import EmailMessage, get_connection
+from django.utils.dateparse import parse_date
+
 import reservations.config as roombaht_config
+
 
 logging.basicConfig(stream=sys.stdout,
                     level=roombaht_config.LOGLEVEL)
 
 logger = logging.getLogger(__name__)
 
+
 def real_date(a_date: str, year=None):
     """Convert string date into python date
 
     Args:
         a_date (str): date string,
-            expected format: "Mon - 11/7", "11/7"
+            expected formats supported: "Mon - 11/7", "Mon 11/14", "11/7", "11/14/2024", "2024/11/14"
         year (Optional[int]): year, in 4-digit format
             Allows specification of year, otherwise is in current year at runtime
     Returns:
         date: python `date` object
     """
+    if a_date is None:
+        raise ValueError("a_date is None")
+
+    a_date = str(a_date).strip()
+    if a_date == '':
+        raise ValueError("empty date string")
+
+    # Strip out strings "Early" and "Late"
+    a_date = re.sub(r'Early|Late', '', a_date, flags=re.IGNORECASE)
+
     year = year or datetime.now().year
-    date_bits = a_date.split(" ")
-    date = None
-    if len(date_bits) == 2 and \
-       date_bits[0] in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        sub_date = date_bits[1]
-        sub_date_bits = sub_date.split("/")
-        if len(sub_date_bits) == 2:
-            date = sub_date
+    dateparser_settings = {
+        'RETURN_AS_TIMEZONE_AWARE': True,
+        # 'PREFER_DATES_FROM': '',
+        'TIMEZONE': 'US/Pacific',
+        'STRICT_PARSING': True,
+    }
 
-    elif len(date_bits) == 3 and \
-         date_bits[0] in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] and \
-         date_bits[2] in ['Early', 'Late']:
-        sub_date = date_bits[1]
-        sub_date_bits = sub_date.split("/")
-        if len(sub_date_bits) == 2:
-            date = sub_date
+    parsed_datetime = dateparser.parse(
+        a_date,
+        languages=['en'],
+        settings=dateparser_settings,
+    )
 
-    elif len(a_date.split('/')) == 3:
-        r_date = re.search(r'(\d+)/(\d+)/(\d+)', a_date)
-        if r_date:
-            return parse_date(f"{r_date[1]}-{r_date[2]}-{r_date[3]}")
+    if parsed_datetime is None:
+        parsed_datetime = dateparser.parse(
+            f"{a_date} {year}",
+            languages=['en'],
+            settings=dateparser_settings,
+        )
+        if parsed_datetime is None:
+            raise ValueError(f"Could not parse date: {a_date}")
 
-    if not date:
-        raise Exception(f"Unexpected date format {a_date}")
+    return parsed_datetime.date()
 
-    month, day = date.lstrip().split('/')
-    return parse_date(f"{year}-{month}-{day}")
 
 def take3_date(date_obj):
     """Converts date string "mm-dd-yyyy" to "day - mm/dd"
