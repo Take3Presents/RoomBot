@@ -49,7 +49,7 @@ variable "staging" {
 variable "production" {
   type = bool
   description = "Whether or not to enable production environment"
-  default = false
+  default = true
 }
 
 output "nameservers" {
