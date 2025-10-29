@@ -36,27 +36,14 @@ class SecretPartyGuestIngest(BaseModel):
             last_name=last_name,
             first_name=first_name,
             email=json_data.get('email', ''),
-            product=cls._extract_product_name(json_data.get('product')),
-            transferred_from_code=cls._extract_transfer_code(json_data.get('transferred_from')),
+            product=json_data.get('product'),
+            transferred_from_code=json_data.get('transferred_from'),
             type=json_data.get('type')
         )
 
     @classmethod
     def _from_csv(cls, csv_data: Dict[str, Any]) -> 'SecretPartyGuestIngest':
         return cls(**csv_data)
-
-    @staticmethod
-    def _extract_product_name(product_data) -> str:
-        if isinstance(product_data, dict):
-            return product_data.get('name', '')
-        return str(product_data) if product_data else ''
-
-    @staticmethod
-    def _extract_transfer_code(transfer_data) -> Optional[str]:
-        if isinstance(transfer_data, dict):
-            return transfer_data.get('code')
-        return transfer_data
-
 
 class RoomPlacementListIngest(BaseModel):
     """Expected fields in the room spreadsheet

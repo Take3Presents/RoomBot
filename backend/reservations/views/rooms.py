@@ -24,6 +24,29 @@ logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 
 logger = logging.getLogger('ViewLogger_rooms')
 
+
+def validate_room_params(data):
+    """
+    Validate and extract room parameters from request data.
+    Returns (hotel, number) tuple or Response error.
+    """
+    hotel = data.get("hotel")
+    number_str = data.get("number")
+
+    # Check for missing/empty fields
+    if not hotel:
+        return Response({"error": "Hotel is required"}, status=status.HTTP_400_BAD_REQUEST)
+    if not number_str:
+        return Response({"error": "Room number is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate number is an integer
+    try:
+        number = int(number_str)
+    except (ValueError, TypeError):
+        return Response({"error": "Room number must be a valid integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+    return hotel, number
+
 @api_view(['POST'])
 def my_rooms(request):
     if request.method == 'POST':
@@ -141,16 +164,19 @@ def swap_request(request):
             return Response("Room swaps are not currently enabled",
                             status=status.HTTP_501_NOT_IMPLEMENTED)
 
-        try:
-            room_num=data["number"]
-            name_hotel=data["hotel"]
-            msg=data["contact_info"]
-        except KeyError:
-            return Response("missing fields", status=status.HTTP_400_BAD_REQUEST)
+        # Validate room parameters
+        result = validate_room_params(data)
+        if isinstance(result, Response):
+            return result
+        name_hotel, room_num = result
 
-        if name_hotel not in roombaht_config.VISIBLE_HOTELS:
-            return Response("Room is not swappable",
-                            status=status.HTTP_400_BAD_REQUEST)
+        # Validate contact_info
+        msg = data.get("contact_info")
+        if not msg:
+            return Response({"error": "Contact info is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if name_hotel not in roombaht_config.GUEST_HOTELS:
+            return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
 
         requester_room_numbers = [x.room_number
                                   for x in Guest.objects.filter(email=requester_email,
@@ -224,11 +250,15 @@ def swap_gen(request):
 
         data = request.data
         logger.debug(f"data_swap_gen: {data}")
-        try:
-            room_num = data["number"]
-            hotel = data["hotel"]
-        except KeyError as e:
-            return Response("missing fields", status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate room parameters
+        result = validate_room_params(data)
+        if isinstance(result, Response):
+            return result
+        hotel, room_num = result
+
+        if hotel not in roombaht_config.VISIBLE_HOTELS:
+            return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
 
         try:
             guest_instances = Guest.objects.filter(email=email)
@@ -272,13 +302,20 @@ def swap_it_up(request):
                             status=status.HTTP_501_NOT_IMPLEMENTED)
 
         data = request.data
-        try:
-            room_num=data["number"]
-            swap_req=data["swap_code"]
-            hotel=data['hotel']
-        except KeyError as e:
-            return Response("missing fields", status=status.HTTP_400_BAD_REQUEST)
-            logger.error(f"Missing fields")
+
+        # Validate room parameters
+        result = validate_room_params(data)
+        if isinstance(result, Response):
+            return result
+        hotel, room_num = result
+
+        # Validate swap_code
+        swap_req = data.get("swap_code")
+        if not swap_req:
+            return Response({"error": "Swap code is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if hotel not in roombaht_config.VISIBLE_HOTELS:
+            return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
 
         logger.info(f"[+] Swap attempt {data}")
         try:

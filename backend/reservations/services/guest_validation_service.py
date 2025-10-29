@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 class GuestValidationService:
 
     def __init__(self):
-        self._room_products = self._build_room_products_list()
+        self._room_products = self._build_room_products_set()
         self._ignored_transactions = set(roombaht_config.IGNORE_TRANSACTIONS)
         self._guest_hotels = set(roombaht_config.GUEST_HOTELS)
         logger.debug("GuestValidationService initialized with %d room products, %d ignored transactions, %d guest hotels",
                      len(self._room_products), len(self._ignored_transactions), len(self._guest_hotels))
 
-    def _build_room_products_list(self) -> Set[str]:
+    def _build_room_products_set(self) -> Set[str]:
         room_products = set()
         for _take3_product, hotel_details in ROOM_LIST.items():
             for product in hotel_details.get('rooms', []):

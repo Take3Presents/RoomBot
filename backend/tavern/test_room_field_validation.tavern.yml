@@ -1,0 +1,648 @@
+---
+test_name: Test swap_request missing hotel field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Request swap without hotel field
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        contact_info: "Please swap with me!"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Hotel is required"
+
+---
+test_name: Test swap_request empty hotel field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Request swap with empty hotel string
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        hotel: ""
+        contact_info: "Please swap with me!"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Hotel is required"
+
+---
+test_name: Test swap_request empty number field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Request swap with empty number string
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      json:
+        jwt: "{test_token}"
+        number: ""
+        hotel: "nugget"
+        contact_info: "Please swap with me!"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number is required"
+
+---
+test_name: Test swap_request invalid number type
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Request swap with non-integer number
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      json:
+        jwt: "{test_token}"
+        number: "abc"
+        hotel: "nugget"
+        contact_info: "Please swap with me!"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number must be a valid integer"
+
+---
+test_name: Test swap_request empty contact_info
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Request swap with empty contact_info
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        hotel: "nugget"
+        contact_info: ""
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Contact info is required"
+
+---
+test_name: Test swap_request invalid hotel
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Request swap for invalid hotel
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        hotel: "nonexistent_hotel"
+        contact_info: "Please swap!"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 404
+
+---
+test_name: Test swap_gen missing hotel field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Generate swap code without hotel field
+    request:
+      url: "http://localhost:8000/api/swap_gen/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Hotel is required"
+
+---
+test_name: Test swap_gen empty hotel field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Generate swap code with empty hotel string
+    request:
+      url: "http://localhost:8000/api/swap_gen/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        hotel: ""
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Hotel is required"
+
+---
+test_name: Test swap_gen empty number field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Generate swap code with empty number string
+    request:
+      url: "http://localhost:8000/api/swap_gen/"
+      json:
+        jwt: "{test_token}"
+        number: ""
+        hotel: "nugget"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number is required"
+
+---
+test_name: Test swap_gen invalid number type
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Generate swap code with non-integer number
+    request:
+      url: "http://localhost:8000/api/swap_gen/"
+      json:
+        jwt: "{test_token}"
+        number: "abc"
+        hotel: "nugget"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number must be a valid integer"
+
+---
+test_name: Test swap_gen invalid hotel
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Generate swap code for hotel not in VISIBLE_HOTELS
+    request:
+      url: "http://localhost:8000/api/swap_gen/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        hotel: "nonexistent_hotel"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 404
+
+---
+test_name: Test swap_it_up missing hotel field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap without hotel field
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        number: 101
+        swap_code: "test-code"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Hotel is required"
+
+---
+test_name: Test swap_it_up missing number field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap without number field
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: "nugget"
+        swap_code: "test-code"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number is required"
+
+---
+test_name: Test swap_it_up missing swap_code field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap without swap_code field
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: "nugget"
+        number: 101
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Swap code is required"
+
+---
+test_name: Test swap_it_up empty hotel field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap with empty hotel string
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: ""
+        number: 101
+        swap_code: "test-code"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Hotel is required"
+
+---
+test_name: Test swap_it_up empty number field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap with empty number string
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: "nugget"
+        number: ""
+        swap_code: "test-code"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number is required"
+
+---
+test_name: Test swap_it_up empty swap_code field
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap with empty swap_code string
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: "nugget"
+        number: 101
+        swap_code: ""
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Swap code is required"
+
+---
+test_name: Test swap_it_up invalid number type
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap with non-integer number
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: "nugget"
+        number: "abc"
+        swap_code: "test-code"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 400
+      json:
+        error: "Room number must be a valid integer"
+
+---
+test_name: Test swap_it_up invalid hotel
+
+stages:
+  - name: login as testuser1
+    request:
+      url: "http://localhost:8000/api/login/"
+      method: "POST"
+      json:
+        email: "testuser1@example.com"
+        jwt: "test jwt"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      save:
+        json:
+          test_token: "jwt"
+
+  - name: Execute swap for hotel not in VISIBLE_HOTELS
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      json:
+        jwt: "{test_token}"
+        hotel: "nonexistent_hotel"
+        number: 101
+        swap_code: "test-code"
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 404
