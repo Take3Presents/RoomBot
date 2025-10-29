@@ -1,7 +1,12 @@
 from django.core.checks import Error, Warning, Info, register
 from reservations.models import Room, Guest
 
-def ticket_chain(p_guest, p_chain=[]):
+
+def ticket_chain(p_guest, p_chain=None):
+    """Build a ticket/transfer chain for a Guest."""
+    if p_chain is None:
+        p_chain = []
+
     a_chain = [p_guest] + p_chain
 
     if not p_guest.transfer or p_guest.transfer == '':
@@ -13,6 +18,7 @@ def ticket_chain(p_guest, p_chain=[]):
         return a_chain
 
     return ticket_chain(a_guest, a_chain)
+
 
 @register(deploy=True)
 def guest_drama_check(app_configs, **kwargs):
@@ -127,4 +133,3 @@ def room_drama_check(app_configs, **kwargs):
 
 
     return errors
-

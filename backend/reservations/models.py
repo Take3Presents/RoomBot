@@ -1,6 +1,7 @@
 import datetime
 import logging
 import sys
+import re
 from django.utils.timezone import make_aware
 from django.db import models
 from reservations.constants import ROOM_LIST
@@ -37,7 +38,9 @@ class Guest(models.Model):
     last_login = models.DateTimeField(blank=True, null=True)
 
     @staticmethod
-    def chain(trans_code, guest_chain=[]):
+    def chain(trans_code, guest_chain=None):
+        if guest_chain is None:
+            guest_chain = []
         try:
             existing_guest = Guest.objects.get(ticket=trans_code)
         except Guest.DoesNotExist:
@@ -199,11 +202,34 @@ class Room(DirtyFieldsMixin, models.Model):
         raise Exception('Should never not find a short product code tho')
 
     @staticmethod
+    def derive_room_name(hotel, code):
+        code_bits = code.split('-')
+        a_hotel = hotel
+        # todo hotels should not be hardcoded everywhere
+        if hotel.lower().startswith('ballys'):
+            a_hotel = "bally's"
+
+        if len(code_bits) != 2 or (code_bits[0].lower() != 'ballys' and hotel == 'ballys') or \
+           (hotel.lower() == 'nugget' and code_bits[0].lower() != 'gnlt'):
+            raise Exception("Unexpected room code format ", code)
+
+        a_code = code_bits[1]
+        for a_room, a_detail in ROOM_LIST.items():
+            if a_hotel.lower() != a_detail['hotel'].lower():
+                continue
+
+            if a_code == a_detail.get('code', ''):
+                return a_room
+
+        return None
+
+    @staticmethod
     def derive_hotel(product):
-        if product.lower().startswith('nugget'):
+        stripped_product = re.sub(r'^0*\d+\.\d+\s+', '', product)
+        if stripped_product.lower().startswith('nugget'):
             return 'Nugget'
 
-        if product.lower().startswith('bally'):
+        if stripped_product.lower().startswith('bally'):
             return 'Ballys'
 
         raise UnknownProductError(product)

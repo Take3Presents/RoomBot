@@ -37,3 +37,5 @@ FEATURES = env_config('features', '').split(',')
 
 ROOM_COOLDOWN = int(env_config('room_cooldown', '30'))
 SWAP_CODE_LIFE = int(env_config('swap_code_life', '3600'))
+
+SP_API_KEY = env_config('sp_api_key')

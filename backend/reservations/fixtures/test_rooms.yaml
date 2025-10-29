@@ -48,6 +48,22 @@
     guest: 4
 
 - model: "reservations.room"
+  pk: 8
+  fields:
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+    _check_in: "1999-12-31"
+    _check_out: "2000-01-02"
+    number: "501"
+    name_take3: "King Bed Balcony"
+    name_hotel: "Nugget"
+    is_swappable: true
+    sp_ticket_id: "SP00005"
+    primary: "test user4"
+    placed_by_roombot: true
+    guest: 5
+
+- model: "reservations.room"
   pk: 4
   fields:
     created_at: "1999-12-31T23:59:59+00:00"

@@ -11,7 +11,7 @@ if [ -n "$ROOMBAHT_CONFIG" ] ; then
 	exit 2
     fi
 else
-    ROOMBAHT_CONFIG="dev.env"
+    ROOMBAHT_CONFIG="${ROOTDIR}/dev.env"
 fi
 source "$ROOMBAHT_CONFIG"
 

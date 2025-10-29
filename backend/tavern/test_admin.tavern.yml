@@ -139,3 +139,17 @@ stages:
                 version:
                   type: "str"
                   required: true
+
+  - name: "can request reports"
+    request:
+      url: "http://localhost:8000/api/run_reports/"
+      method: "POST"
+      json:
+        jwt: "{jwt_token}"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 201
+      json:
+        admins:
+          - "testadmin@example.com"

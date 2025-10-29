@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
@@ -8,6 +7,42 @@ import toast, { Toaster } from 'react-hot-toast';
 import "../styles/modals.css";
 const swapError = (msg) => toast.error("Swap error: " + msg);
 const someError = (msg) => toast.error("Oh No: " + msg);
+
+// Helper function to extract error message from API response
+const extractErrorMessage = (error) => {
+  if (error.response && error.response.data) {
+    // Check if the error response has an 'error' field
+    if (error.response.data.error) {
+      return error.response.data.error;
+    }
+    // If it's a string, return it directly
+    if (typeof error.response.data === 'string') {
+      return error.response.data;
+    }
+    // Otherwise, stringify the object
+    return JSON.stringify(error.response.data);
+  }
+  return null;
+};
+
+// Centralized error handler for swap operations
+const handleSwapError = (error) => {
+  if (error.response) {
+    if (error.response.status === 400) {
+      const errorMsg = extractErrorMessage(error);
+      swapError(errorMsg || "Unacceptable swap requested");
+    } else {
+      console.log("server responded");
+      console.log(error.response.data);
+      swapError("Server responded with error. contact placement@take3presents.com");
+    }
+  } else if (error.request) {
+    swapError("Network error. Please try again later.");
+  } else {
+    swapError("Mysterious error is mysterious.");
+    console.log(error);
+  }
+};
 
 export function ModalParty(props) {
   const [show, setShow] = useState(false);
@@ -59,26 +94,7 @@ export function ModalRequestSwap(props) {
       .then(res => {
 	toast.success("Swap request sent.");
       })
-      .catch((error) => {
-        if (error.response) {
-	  if ( error.response.status == 400 ) {
-	    var msg = "Unacceptable swap requested";
-	    if (error.response.data) {
-	      msg = msg + ": " + error.response.data;
-	    }
-	    swapError(msg);
-	  } else {
-            console.log("server responded");
-            console.log(error.response.data);
-	    swapError("Server responded with error. contact placement@take3presents.com");
-	  }
-        } else if (error.request) {
-	  swapError("Network error. Please try again later.");
-        } else {
-	  swapError("Mysterious error is mysterious.");
-          console.log(error);
-        }
-      });
+      .catch(handleSwapError);
   }
 
   const handleSubmit = (evt) => {
@@ -114,7 +130,7 @@ export function ModalRequestSwap(props) {
 
           <h5>System Live</h5>
           <p>Ok fam so rly we can only do so much for you here.</p>
-          <p>We can send the owner of this room an email with your contact info, but we can’t make them look at their phone or want to swap rooms with you. So. If you have another way of reaching this person, go for it.</p>
+          <p>We can send the owner of this room an email with your contact info, but we can't make them look at their phone or want to swap rooms with you. So. If you have another way of reaching this person, go for it.</p>
           <p>Once you are in contact and both agree to the swap, click the CreateSwapCode button on your room. Send the code to the other person and have them enter it.</p>
           <p>Enter your email address and/or phone number so the owner of the room you want can contact you.</p>
 
@@ -146,38 +162,21 @@ export function ModalEnterCode(props) {
   const handleShow = () => setShow(true);
   const [phrase, setPhrase] = useState("");
   const jwt = JSON.parse(localStorage.getItem('jwt'));
-  const row = props.row.number;
+  const number = props.row.number;
+  const hotel = props.row.name_hotel;
 
   const handleAPICall = (code) => {
     axios.post(window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/swap_it_up/", {
         jwt: jwt['jwt'],
-        number: row,
-        swap_code: code
+        number: number,
+        swap_code: code,
+        hotel: hotel
       })
       .then(res => {
         setPhrase(res.data);
         handleClose();
       })
-      .catch((error) => {
-        if (error.response) {
-	  if ( error.response.status == 400 ) {
-	    var msg = "Unacceptable swap requested";
-	    if (error.response.data) {
-	      msg = msg + ": " + error.response.data;
-	    }
-	    swapError(msg);
-	  } else {
-            console.log("server responded");
-            console.log(error.response.data);
-	    swapError("Server responded with error. contact placement@take3presents.com");
-	  }
-        } else if (error.request) {
-	  swapError("Network error. Please try again later.");
-        } else {
-	  swapError("Mysterious error is mysterious.");
-          console.log(error);
-        }
-      });
+      .catch(handleSwapError);
   }
 
   const handleSubmit = (evt) => {
@@ -235,7 +234,8 @@ export function ModalCreateCode(props) {
   const [phrase, setPhrase] = useState("");
 
   const jwt = JSON.parse(localStorage.getItem('jwt'));
-  const row = props.row.number;
+  const number = props.row.number;
+  const hotel = props.row.name_hotel;
   const handleClose = () => {
     if ( refreshTimer !== null ) {
       clearInterval(refreshTimer);
@@ -251,7 +251,7 @@ export function ModalCreateCode(props) {
 	  .then(res => {
 	    var hasSwapped = true;
 	    res.data.rooms.forEach((room) => {
-	      if (room.number == row) {
+	      if (room.number == number) {
 		hasSwapped = false;
 	      }
 	    });
@@ -267,33 +267,15 @@ export function ModalCreateCode(props) {
 
     axios.post(window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/swap_gen/", {
             jwt: jwt['jwt'],
-            number: {row},
+            number: number,
+            hotel: hotel,
       })
       .then(res => {
         const phrase = res.data.swap_phrase;
         setPhrase(phrase);
         handleShow();
       })
-      .catch((error) => {
-        if (error.response) {
-	  if ( error.response.status == 400 ) {
-	    var msg = "Unacceptable swap requested";
-	    if (error.response.data) {
-	      msg = msg + ": " + error.response.data;
-	    }
-	    swapError(msg);
-	  } else {
-            console.log("server responded");
-            console.log(error.response.data);
-	    swapError("Server responded with error. contact placement@take3presents.com");
-	  }
-        } else if (error.request) {
-	  swapError("Network error. Please try again later.");
-        } else {
-	  swapError("Mysterious error is mysterious.");
-          console.log(error);
-        }
-      });
+      .catch(handleSwapError);
   }
 
 
@@ -333,5 +315,3 @@ export function ModalCreateCode(props) {
     </>
   );
 }
-
-

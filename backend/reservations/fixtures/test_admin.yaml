@@ -1,0 +1,20 @@
+---
+- model: "reservations.guest"
+  pk: 1
+  fields:
+    name: "test admin"
+    email: "testadmin@example.com"
+    jwt: "test jwt"
+    can_login: true
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+
+- model: "reservations.staff"
+  pk: 1
+  fields:
+    name: "test admin"
+    email: "testadmin@example.com"
+    is_admin: true
+    guest: 1
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"

@@ -1,11 +1,12 @@
 """Datatypes for importing guest and room lists"""
 # we don't need a StaffImport model because that table is directly translated to the db table
 
-from typing import Optional
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 
+
 class SecretPartyGuestIngest(BaseModel):
-    """Required fields imported from SecretParty CSV
+    """Required fields imported from SecretParty CSV and API
     """
     ticket_code: str  # transaction code for purchase/transfer
     last_name: str
@@ -15,10 +16,39 @@ class SecretPartyGuestIngest(BaseModel):
     transferred_from_code: Optional[str] = None
     type: Optional[str] = None
 
+    @classmethod
+    def from_source(cls, data: Dict[str, Any], source_type: str = 'csv') -> 'SecretPartyGuestIngest':
+        """Create instance from various data sources"""
+        if source_type == 'json' or source_type == 'secretparty':
+            return cls._from_json(data)
+        elif source_type == 'csv':
+            return cls._from_csv(data)
+        else:
+            raise ValueError(f"Unsupported source type: {source_type}")
+
+    @classmethod
+    def _from_json(cls, json_data: Dict[str, Any]) -> 'SecretPartyGuestIngest':
+        first_name = json_data.get('first_name', '')
+        last_name = json_data.get('last_name', '')
+
+        return cls(
+            ticket_code=json_data.get('code', ''),
+            last_name=last_name,
+            first_name=first_name,
+            email=json_data.get('email', ''),
+            product=json_data.get('product'),
+            transferred_from_code=json_data.get('transferred_from'),
+            type=json_data.get('type')
+        )
+
+    @classmethod
+    def _from_csv(cls, csv_data: Dict[str, Any]) -> 'SecretPartyGuestIngest':
+        return cls(**csv_data)
 
 class RoomPlacementListIngest(BaseModel):
     """Expected fields in the room spreadsheet
     NOTE: not all of these columns may be used!
+    todo: why is that ^^^^^
     """
     placement_verified: Optional[str] = Field(None, alias='Placement Verified')
     room: int = Field(alias='Room')
@@ -31,7 +61,9 @@ class RoomPlacementListIngest(BaseModel):
     check_in_date: Optional[str] = Field(alias='Check-In Date')
     check_out_date: Optional[str] = Field(alias='Check-Out Date')
     placed_by: Optional[str] = Field(alias='Placed By')
+    placed_by_roombaht: Optional[str] = Field(alias='Placed By Roombaht')
     ticket_id_in_secret_party: Optional[str] = Field(alias='Ticket ID in SecretParty')
+    room_code: Optional[str] = Field(alias='Room Code')
 
     class Config:
         populate_by_name = True  # allows data to be populated in the model by field names, not just aliases

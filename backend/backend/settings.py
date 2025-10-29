@@ -68,6 +68,7 @@ SILENCED_SYSTEM_CHECKS = [
 # don't care about debug mode in dev
 if DEV_MODE:
     SILENCED_SYSTEM_CHECKS.append('security.W018')
+    SILENCED_SYSTEM_CHECKS.append('security.W009')
 
 TEMPLATES = [
     {

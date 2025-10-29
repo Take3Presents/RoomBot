@@ -1,37 +1,37 @@
-Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Resident),Last Name (Resident),Secondary Name,Check-In Date,Check-Out Date,Placed By,Ticket ID in SecretParty
+Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Resident),Last Name (Resident),Secondary Name,Check-In Date,Check-Out Date,Placed By,Ticket ID in SecretParty,Placed By Roombaht,Room Code,
 # Generic rooms and their features
-100,Standard King,Hearing Accessible,,,,,,Roombaht,
-101,Double Queen Beds Lake View,Smoking,,,,,,Roombaht,
-102,Standard King,Smoking,,,,,,Roombaht,
+100,Standard King,Hearing Accessible,,,,,,,,True,GNLT-KS
+101,Double Queen Lakeview,Smoking,,,,,,,,True,GNLT-QQLV
+102,Standard King,Smoking,,,,,,,,True,GNLT-KS
 # some comp'd placed rooms
-103,Double Queen Beds Lake View,,Staff,Staffy,,,,Foo Placer,
-104,Double Queen Beds Lake View,,Staff,Staffy,,,,Foo Placer,
+103,Double Queen Lakeview,,Staff,Staffy,,,,Foo Placer,,False,GNLT-QQLV
+104,Double Queen Lakeview,,Staff,Staffy,,,,Foo Placer,,False,GNLT-QQLV
 # a placed purchased room
-105,Double Queen Beds,Balcony,Hat,Fob,,,,Foo Placer,hhh010
+105,Double Queen Lakeview,Balcony,Hat,Fob,,,,Foo Placer,hhh010,False,GNLT-QQLV
 # placed transfer
-107,King Bed,,,,,,,Roombaht,
+107,Standard King,,,,,,,,,True,GNLT-KS
 # placed / compd room
-108,King Bed,Mountain View,Fop,Hat,,,,Foo Placer,
+108,Standard King,Mountain View,Fop,Hat,,,,Foo Placer,,False,GNLT-KS
 # placed transfer
-109,King Bed,MountainView,Moo,Foo,,,,Foo Placer,hhh017
+109,Standard King,MountainView,Moo,Foo,,,,Foo Placer,hhh017,False,GNLT-KS
 # more generic rooms
-110,King Bed,,,,,,,Roombaht,
-111,King Bed Suite Mountain View,,,,,,,Roombaht,
-112,King Bed Suite Lake View Balcony,,Mat,Foo,,,,Foo Placer,hhh011
-113,King Bed Suite Balcony,,,,,,,Roombaht,
-114,King Bed Suite Balcony,,,,,,,Roombaht,
-115,King Bed Suite Balcony,,,,,,,Roombaht,
-116,Double Queen Beds Lake View Balcony,,,,,,,Roombaht,
-118,Double Queen Beds Lake View,Smoking,,,,,,Roombaht,
-119,King Bed Suite Balcony,,,,,,,Roombaht,
-120,King Bed Suite Lake View Balcony,"Smoking, ADA",,,,,,Roombaht,
-121,King Bed Lake View,Balcony,,,,,,Roombaht,
+110,Standard King,,,,,,,,,True,GNLT-KS
+111,Sunset King Suite,,,,,,,,,True,GNLT-SSK
+112,Sunset King Suite,,Mat,Foo,,,,Foo Placer,hhh011,True,GNLT-SSK
+113,Sunset King Suite,,,,,,,,,True,GNLT-SSK
+114,Sunset King Suite,,,,,,,,,True,GNLT-SSK
+115,Sunset Lakeview King,,,,,,,,,True,GNLT-KLV
+116,Double Queen Lakeview Balcony,,,,,,,,,True,GNLT-QQLV
+118,Double Queen Lakeview,Smoking,,,,,,,,True,GNLT-QQLV
+119,Sunset King Suite,,,,,,,,,True,GNLT-SSK
+120,King Balcony,"Smoking, ADA",,,,,,,,True,GNLT-KB
+121,King Lakeview,Balcony,,,,,,,,True,GNLT-KLV
 # this room is a normal purchase that gets transferred
-200,King Bed Suite Lake View Balcony,,,,,,,Roombaht,
+200,Sunset King Suite,,,,,,,,,True,GNLT-SSK
 # comp'd suite that is also art
-201,King Bed Suite Mountain View,,Mop,Fob,Mop Buddy,,,Foo Placer,
-202,King Bed Balcony,,,,,,,Roombaht,
-203,Double Queen Beds Lake View Balcony,,,,,,,Roombaht,
-204,King Bed Lake View,,,,,,,Roombaht,
-205,King Bed Suite Mountain View,,,,,,,Roombaht,
-206,Double Queen Beds Lake View,,,,,,,Roombaht,
+201,Sunset King Suite,,Mop,Fob,Mop Buddy,,,Foo Placer,,False,GNLT-SSK
+202,Standard King,,,,,,,,,True,GNLT-KS
+203,Double Queen Lakeview,,,,,,,,,True,GNLT-QQLV
+204,Standard King,,,,,,,,,True,GNLT-KS
+205,Sunset King Suite,,,,,,,,,True,GNLT-SSK
+206,Double Queen Lakeview,,,,,,,,,True,GNLT-QQLV

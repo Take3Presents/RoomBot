@@ -1,137 +1,119 @@
+# todo change key to be hotel-room type code
+#     and put room type name in values as it's own key
 ROOM_LIST = {
     'Queen': {
         'hotel': "Bally's",
+        'code': '2Q',
         'rooms': [
-            "Bally's - Standard 2 Queen",
-            "Bally's - Standard 2 Queen (DTS)",
-            "Bally's - Art Room 2 Queen",
-            "Bally's - Art Room 2 Queen (DTS)",
-            "Bally's - \"\"Quiet\"\" Art Room 2 Queen",
-            "Bally's - \"\"Quiet\"\" Art Room 2 Queen (DTS)"
+            "04.1 Bally's - Standard 2 Queen",
+            "04.2 Bally's - Standard 2 Queen (DTS)",
+            "05.1 Bally's - Art Room 2 Queen",
+            "05.2 Bally's - Art Room 2 Queen (DTS)",
+            "06.1 Bally's - \"Quiet\" Art Room 2 Queen",
+            "06.2 Bally's - \"Quiet\" Art Room 2 Queen (DTS)"
         ]
-    },
-
-    "Double Queen Beds Lake View Balcony": {
-        'hotel': 'Nugget',
-        'rooms': [
-            'Nugget - Lakeview Balcony 2 Queens',
-            'Nugget - Lakeview Balcony 2 Queens (DTS)'
-        ]
-    },
-
-    "Double Queen Beds Lake View": {
-        'hotel': 'Nugget',
-        'rooms': [
-            'Nugget - Lakeview 2 Queens',
-            'Nugget - Lakeview 2 Queens (DTS)'
-        ]
-    },
-
-    "Double Queen Beds": {
-        'hotel': 'Nugget'
-    },
-
-    "Double Queen Beds Balcony": {
-        'hotel': 'Nugget'
     },
 
     'Queen Sierra Suite': {
         'hotel': "Bally's",
+        'code': 'CSZ2Q',
         'rooms': [
-            "Bally's - Queen Sierra Suite",
-            "Bally's - Queen Sierra Suite (DTS)"
-        ]
-    },
-
-    "King Bed": {
-        'hotel': 'Nugget',
-        'rooms': [
-            'Nugget - Standard King',
-            'Nugget - Standard King (DTS)'
+            "09.1 Bally's - Queen Sierra Suite",
+            "09.2 Bally's - Queen Sierra Suite (DTS)"
         ]
     },
 
     "King": {
         'hotel': "Bally's",
+        'code': 'K',
         'rooms': [
-            "Bally's - Standard King",
-            "Bally's - Standard King (DTS)",
-            "Bally's - Art Room King",
-            "Bally's - Art Room King (DTS)",
-            "Bally's - \"\"Quiet\"\" Art Room King",
-            "Bally's - \"\"Quiet\"\" Art Room King (DTS)"
-        ]
-    },
-
-    "King Bed Lake View": {
-        'hotel': "Nugget",
-        'rooms': [
-            'Nugget - Lakeview King',
-            'Nugget - Lakeview King (DTS)'
-        ]
-    },
-
-    "King Bed Lake View Balcony": {
-        'hotel': "Nugget",
-        'rooms': [
-            'Nugget - Lakeview Balcony King',
-            'Nugget - Lakeview Balcony King (DTS)'
-        ]
-    },
-
-    "King Bed Balcony": {
-        'hotel': 'Nugget',
-        'rooms': [
-            'Nugget - Balcony King',
-            'Nugget - Balcony King (DTS)'
+            "01.1 Bally's - Standard King",
+            "01.2 Bally's - Standard King (DTS)",
+            "02.1 Bally's - Art Room King",
+            "02.2 Bally's - Art Room King (DTS)",
+            "03.1 Bally's - \"Quiet\" Art Room King",
+            "03.2 Bally's - \"Quiet\" Art Room King (DTS)"
         ]
     },
 
     'King Sierra Suite': {
         'hotel': "Bally's",
+        'code': 'CSZK',
         'rooms': [
-            "Bally's - King Sierra Suite",
-            "Bally's - King Sierra Suite (DTS)"
+            "08.1 Bally's - King Sierra Suite",
+            "08.2 Bally's - King Sierra Suite (DTS)"
         ]
     },
 
     'Tahoe Suite': {
         'hotel': "Bally's",
+        'code': 'TZK',
         'rooms': [
-            "Bally's - Tahoe Suite",
-            "Bally's - Tahoe Suite (DTS)"
+            "10.1 Bally's - Tahoe Suite",
+            "10.2 Bally's - Tahoe Suite (DTS)"
         ]
     },
 
     "Executive Suite": {
         'hotel': "Bally's",
+        'code': 'EZ',
         'rooms': [
-            "Bally's - Executive King Suite",
-            "Bally's - Executive King Suite (DTS)"
+            "07.1 Bally's - Executive King Suite",
+            "07.2 Bally's - Executive King Suite (DTS)"
         ]
     },
 
-    "King Bed Suite Lake View Balcony": {
-        'hotel': "Nugget",
+    "Double Queen Lakeview": {
+        'hotel': 'Nugget',
+        'code': 'QQLV',
         'rooms': [
-            "Nugget - King Lakeview Balcony Suite",
-            "Nugget - King Lakeview Balcony Suite (DTS)"
+            '15.1 Nugget - Sunset Lakeview 2 Queen',
+            '15.2 Nugget - Sunset Lakeview 2 Queen (DTS)'
         ]
     },
 
-    "King Bed Suite Mountain View": {
-        'hotel': "Nugget",
+    "Standard Double Queen": {
+        'hotel': 'Nugget',
+        'code': 'QQS',
         'rooms': [
-            "Nugget - King Mountain View Suite",
-            "Nugget - King Mountain View Suite (DTS)"
+            '14.1 Nugget - Sunset 2 Queen',
+            '14.2 Nugget - Sunset 2 Queen (DTS)'
         ]
     },
 
-    "King Bed Suite Balcony": {
-        'hotel': "Nugget",
+    "Standard King": {
+        'hotel': 'Nugget',
+        'code': 'KS',
         'rooms': [
-            "Nugget - King Pool View Balcony Suite",
-            "Nugget - King Pool View Balcony Suite (DTS)"
+            '11.1 Nugget - Sunset King',
+            '11.2 Nugget - Sunset King (DTS)'
+        ]
+    },
+
+    "King Lakeview": {
+        'hotel': "Nugget",
+        'code': 'KLV',
+        'rooms': [
+            '13.1 Nugget - Sunset Lakeview King',
+            '13.2 Nugget - Sunset Lakeview King (DTS)'
+        ]
+    },
+
+    "King Balcony": {
+        'hotel': 'Nugget',
+        'code': 'KB',
+        'rooms': [
+            '12.1 Nugget - Sunset Balcony King',
+            '12.2 Nugget - Sunset Balcony King (DTS)'
+        ]
+    },
+
+    "Sunset King Suite": {
+        'hotel': "Nugget",
+        'code': 'SSK',
+        'rooms': [
+            "16.1 Nugget - Sunset King Suite",
+            "16.2 Nugget - Sunset King Suite (DTS)"
         ]
     }
 }

@@ -1,44 +1,44 @@
-Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Resident),Last Name (Resident),Secondary Name,Check-In Date,Check-Out Date,Placed By,Ticket ID in SecretParty
+Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Resident),Last Name (Resident),Secondary Name,Check-In Date,Check-Out Date,Placed By,Ticket ID in SecretParty,Placed By Roombaht,Room Code,
 # A Special Room
-300,Laboratory,,,,,,,,
+300,Laboratory,,,,,,,,,False,Ballys-UNKNOWN
 # generic rooms
-301,King,Hearing Accessible,,,,,,Roombaht,
+301,King,Hearing Accessible,,,,,,,,True,Ballys-K
 # generic room
-302,Queen,Smoking,,,,,,Roombaht,
-303,King,Lakeview,,,,,,Roombaht,
-304,Queen,ADA,,,,,,Roombaht,
+302,Queen,Smoking,,,,,,,,True,Ballys-2Q
+303,King,Lakeview,,,,,,,,True,Ballys-K
+304,Queen,ADA,,,,,,,,True,Ballys-2Q
 # Simple placed room w/o check-in/check-out
-305,Queen,,Foo,Bar,,,,Foo Placer,aaa001
+305,Queen,,Foo,Bar,,,,Foo Placer,aaa001,False,Ballys-2Q
 # Simple placed room with check-in/check-out
-306,Queen,,Foo,Baz,,Fri 11/10,Mon 11/13,Foo Placer,aaa002
+306,Queen,,Foo,Baz,,Fri 11/10,Mon 11/13,Foo Placer,aaa002,False,Ballys-2Q
 # two generic art rooms
-307,King,,Foo,Baa,Foos Friend,Wed 11/08,Mon 11/13,Foo Placer,aaa005
-308,King,,Foo,Bac,,Fri 11/10,Mon 11/13,Foo Placer,aaa006
+307,King,,Foo,Baa,Foos Friend,Wed 11/08,Mon 11/13,Foo Placer,aaa005,False,Ballys-K
+308,King,,Foo,Bac,,Fri 11/10,Mon 11/13,Foo Placer,aaa006,False,Ballys-K
 # transferred art room original ticket placed
-309,King,,Foo,Bab,,,,Foo Placer,aaa007
+309,King,,Foo,Bab,,,,Foo Placer,aaa007,False,Ballys-K
 # transferred art room transferred ticket placed
-310,Queen,,Foo,Bal,,,,Foo Placer,aaa010
+310,Queen,,Foo,Bal,,,,Foo Placer,aaa010,False,Ballys-2Q
 # comp'd room
-311,Queen,Smoking,Staff,Staffy,Staffys Friend,Wed 11/08,Mon 11/13,Foo Placer,
+311,Queen,Smoking,Staff,Staffy,Staffys Friend,Wed 11/08,Mon 11/13,Foo Placer,,False,Ballys-2Q
 #more free rooms
-400,Queen,,,,,,,Roombaht,
-401,Queen,,,,,,,Roombaht,
-402,Queen,,,,,,,Roombaht,
-403,Queen,,,,,,,Roombaht,
-404,King,,,,,,,Roombaht,
-405,Queen,,Foo,Kar,,,,Foo Placer,aaa016
+400,Queen,,,,,,,,,True,Ballys-2Q
+401,Queen,,,,,,,,,True,Ballys-2Q
+402,Queen,,,,,,,,,True,Ballys-2Q
+403,Queen,,,,,,,,,True,Ballys-2Q
+404,King,,,,,,,,,True,Ballys-K
+405,Queen,,Foo,Kar,,,,Foo Placer,aaa016,False,Ballys-2Q
 # placed room that will be transfered twice
-406,Queen,,Fob,TxBar,,,,Foo Placer,aaa020
+406,Queen,,Fob,TxBar,,,,Foo Placer,aaa020,False,Ballys-2Q
 # batch of rooms for a special person
-407,Queen,,Rock,Lobster,,,,Foo Placer,
-408,King,,Rock,Lobster,,,,Foo Placer,
-409,Dungeon,,Rock,Lobster,Rock Buddy,,,Foo Placer,
-410,King,,Rock,Lobster,,,,Foo Placer,aaa023
+407,Queen,,Rock,Lobster,,,,Foo Placer,,False,Ballys-2Q
+408,King,,Rock,Lobster,,,,Foo Placer,,False,Ballys-K
+409,Dungeon,,Rock,Lobster,Rock Buddy,,,Foo Placer,,False,Ballys-UNKNOWN
+410,King,,Rock,Lobster,,,,Foo Placer,aaa023,False,Ballys-K
 # more free rooms
-411,Queen,,,,,,,Roombaht,
-412,King,,,,,,,Roombaht,
-413,King,,,,,,,Roombaht,
-414,King,,,,,,,Roombaht,
-415,Queen,,,,,,,Roombaht,
-416,King,,,,,,,Roombaht,
-417,Queen,,,,,,,Roombaht,
+411,Queen,,,,,,,,,True,Ballys-2Q
+412,King,,,,,,,,,True,Ballys-K
+413,King,,,,,,,,,True,Ballys-K
+414,King,,,,,,,,,True,Ballys-K
+415,Queen,,,,,,,,,True,Ballys-2Q
+416,King,,,,,,,,,True,Ballys-K
+417,Queen,,,,,,,,,True,Ballys-2Q

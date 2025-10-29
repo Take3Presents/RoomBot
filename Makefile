@@ -61,12 +61,17 @@ local_backend_dev: local_backend_env
 	./scripts/start_backend_dev.sh
 
 # tests are cool
-local_backend_tests: local_backend_env
+local_backend_tests: backend_unit_tests local_tavern_tests
+
+local_tavern_tests: local_backend_env
 	./scripts/api_test.sh
+
+backend_unit_tests: local_backend_env
+	./scripts/manage_dev test backend/reservations
 
 # automagically generate django migrations
 local_backend_migrations: local_backend_env
-	uv run --python backend/.venv backend/manage.py makemigrations
+	./scripts/manage_dev makemigrations
 
 # targets to handle data for local dev environment
 local_sample_data: local_backend_env
