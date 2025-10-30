@@ -1,3 +1,4 @@
+---
 services:
   backend:
     build:
@@ -11,6 +12,7 @@ services:
       - docker-dev.env
     depends_on:
       - db
+
   backend-test:
     build:
       context: ./backend
@@ -23,6 +25,7 @@ services:
       - docker-test.env
     depends_on:
       - db
+
   frontend:
     build:
       context: ./frontend
@@ -34,6 +37,12 @@ services:
     command: /app/scripts/entrypoint-compose.sh
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/ > /dev/null || exit 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 40
+
   db:
     image: postgres:16.4-alpine3.20
     ports:
@@ -42,3 +51,16 @@ services:
       - ./.dev-data/roombaht-postgres:/var/lib/postgresql/data
     env_file:
       - docker-dev.env
+
+  frontend-e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.e2e
+    env_file:
+      - docker-test.env
+    network_mode: "host"
+    shm_size: '1gb'
+    depends_on:
+      frontend:
+        condition: service_healthy
+
