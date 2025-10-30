@@ -85,11 +85,16 @@ def reset_otp(email):
     guests = Guest.objects.filter(email=email, can_login=True)
     if guests.count() > 0:
         do_reset(guests)
+        return
 
     else:
-        staff = Staff.objects.get(email=email)
-        if staff:
-            do_reset(Guest.objects.filter(email=email))
+        try:
+            staff = Staff.objects.get(email=email)
+            if staff:
+                do_reset(Guest.objects.filter(email=email))
+                return
 
-        else:
-            logger.warning("Password reset for unknown user %s", email)
+        except Staff.DoesNotExist:
+            pass
+
+    logger.warning("Password reset for unknown user %s", email)
