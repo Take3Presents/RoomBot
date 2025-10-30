@@ -16,7 +16,7 @@ The RoomBot service allows guests to view which rooms they are assigned, and iss
 
 Additional details on these steps are available in this document.
 
-Contact an adult to request the contents of the "secret file". Put these contents into the `.secret` file in your local working copy.
+* Contact an adult to request the contents of the "secret file". Put these contents into the `.secret` file in your local working copy.
 
 ## Local Development
 
@@ -35,7 +35,7 @@ At this point, the local environment will be live at `http://localhost:3000/` an
 
 ## AWS Deployment
 
-These instructions are for staging, however production is quite similar.
+These instructions are for staging, however production is quite similar. Terraform is used to manage the infrastructure, and the `roombaht_ctl` is used to interact with the deployed host, including deploying build archives.
 
 ```sh
 $ cd terraform

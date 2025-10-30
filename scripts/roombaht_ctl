@@ -21,18 +21,37 @@ cleanup() {
 }
 
 usage() {
-    echo "roombaht_ctl <user> <env> frontend-log"
-    echo "roombaht_ctl <user> <env> backend-log"
-    echo "roombaht_ctl <user> <env> backend-restart"
-    echo "roombaht_ctl <user> <env> snapshot"
-    echo "roombaht_ctl <user> <env> wipe"
-    echo "roombaht_ctl <user> <env> clone_db"
-    echo "roombaht_ctl <user> <env> deploy"
-    echo "roombaht_ctl <user> <env> quick_deploy"
-    echo "roombaht_ctl <user> <env> quick_deploy"
-    echo "roombaht_ctl <user> <env> load_rooms <hotel> <rooms dot csv>"
-    echo "roombaht_ctl <user> <env> load_staff <staff dot csv>"
-    echo "roombaht_ctl <user> <env> manage"
+    cat <<'USAGE'
+Usage: roombaht_ctl <user> <env> <action> [args]
+
+Actions:
+  frontend-log                   Follow nginx access and error logs on the remote host
+  backend-log                    Follow journalctl for roombaht, cron, uwsgi, etc.
+  backend-restart                Restart the roombaht systemd service
+  snapshot                       Create a DB snapshot on the remote host
+  snapshot-list                  List available DB snapshots on the remote host
+  wipe                           Wipe the remote ROOMBAHT_DB (interactive confirmation)
+  clone_db [options] <source>    Clone a source database into ROOMBAHT_DB (interactive)
+                                 Options are forwarded to the remote script. For example:
+                                   -d <db>    (example: specify a particular source DB)
+  deploy                         Upload and deploy both frontend and backend artifacts
+  quick_deploy                   Faster deploy (uses same artifacts as deploy)
+  load_rooms <hotel> <csv>       Upload and load rooms from CSV for the given hotel
+  load_staff <csv>               Upload and load staff from CSV
+  manage [manage-args]           Run remote manage command (e.g. Django manage)
+  provision                      Run remote provisioning script
+  help                           Show this help
+
+Examples:
+  roombaht_ctl alice dev backend-log
+  roombaht_ctl bob prod deploy
+  roombaht_ctl carol staging clone_db -d source_db_name
+
+Notes:
+  - Any extra arguments you pass after the action are forwarded to the remote
+    helper script (roombaht_ctl-remote.sh). Where applicable, remote-side flags
+    such as -d are handled there.
+USAGE
 }
 
 yeet_command() {
@@ -130,15 +149,39 @@ elif [ "$ACTION" == "backend-restart" ] ; then
 elif [ "$ACTION" == "snapshot" ] ; then
     yeet_script
     yeet_ctl "${ACTION} snapshot"
+elif [ "$ACTION" == "snapshot-list" ] ; then
+    yeet_script
+    yeet_ctl "${ACTION} snapshot-list"
 elif [ "$ACTION" == "wipe" ] || [ "$ACTION" == "clone_db" ] ; then
-    echo "This will completely wipe the '${ROOMBAHT_DB}' database and it will be super annoying to get it back."
-    echo "Are you sure? [y/n]"
-    read -r -s -n 1 answer
-    if [ "$answer" != "y" ] ; then
-	problems "user said no"
-    fi
-    if [ "$ACTION" == "clone_db" ] && [ "$R_ENV" == "prod" ] ; then
-	problems "cannot clone prod -> prod"
+    if [ "$R_ENV" == "prod" ] ; then
+        if [ "$ACTION" == "wipe" ] ; then
+            echo "⚠️  WARNING: You are about to WIPE PRODUCTION (${ROOMBAHT_DB})!"
+            echo "This will COMPLETELY DESTROY the production database and it will be super annoying to get it back, if at all possible."
+        else
+            echo "⚠️  WARNING: You are about to CLONE into PRODUCTION (${ROOMBAHT_DB})!"
+            echo "This will:"
+            echo "  1. Create a pre-clone snapshot: ${ROOMBAHT_DB}-pre-clone-<timestamp>"
+            echo "  2. COMPLETELY DESTROY the production database"
+            echo "  3. Clone the source database"
+        fi
+        echo ""
+        echo "Type 'DESTROY PRODUCTION' (all caps) to confirm:"
+        read -r answer
+        if [ "$answer" != "DESTROY PRODUCTION" ] ; then
+            problems "user did not confirm production operation"
+        fi
+    else
+        if [ "$ACTION" == "wipe" ] ; then
+            echo "This will completely wipe the '${ROOMBAHT_DB}' database and it will be super annoying to get it back."
+        else
+            echo "This will clone into the '${ROOMBAHT_DB}' database."
+            echo "A pre-clone snapshot will be created first, then the database will be completely wiped."
+        fi
+        echo "Are you sure? [y/n]"
+        read -r -s -n 1 answer
+        if [ "$answer" != "y" ] ; then
+            problems "user said no"
+        fi
     fi
     yeet_script
     yeet_ctl "${ACTION} $*"
