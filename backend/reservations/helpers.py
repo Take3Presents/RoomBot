@@ -9,7 +9,7 @@ import sys
 import dateparser
 from django.core.mail import EmailMessage, get_connection
 from django.utils.dateparse import parse_date
-
+from smtp import SMTPServerDisconnected
 import reservations.config as roombaht_config
 
 
@@ -178,4 +178,9 @@ def send_email(addresses, subject, body, attachments=[]):
 
     logger.info("Sending email to %s, subject: %s", ','.join(real_addresses), subject)
 
-    msg.send()
+    try:
+        msg.send()
+        return True
+    except SMTPServerDisconnected:
+        return False
+

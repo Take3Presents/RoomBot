@@ -218,7 +218,6 @@ def swap_request(request):
                     swap_room.guest.email,
                     msg)
 
-
         objz = {
             'hostname': my_url(),
             'contact_message': msg,
@@ -228,12 +227,14 @@ def swap_request(request):
         template = jenv.get_template('swap.j2')
         body_text = template.render(objz)
 
-        send_email([swap_room.guest.email],
-                   'RoomService RoomBaht - Room Swap Request',
-                   body_text)
-
-        return Response("Request sent! They will respond if interested.",
-                        status=status.HTTP_201_CREATED)
+        if send_email([swap_room.guest.email],
+                      'RoomService RoomBaht - Room Swap Request',
+                      body_text):
+            return Response("Request sent! They will respond if interested.",
+                            status=status.HTTP_201_CREATED)
+        else:
+            return Response("Unable to send email, please try again later",
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
