@@ -9,7 +9,7 @@ import sys
 import dateparser
 from django.core.mail import EmailMessage, get_connection
 from django.utils.dateparse import parse_date
-from smtp import SMTPServerDisconnected
+from smtplib import SMTPServerDisconnected
 import reservations.config as roombaht_config
 
 
@@ -142,9 +142,16 @@ def ts_suffix():
 
 
 def send_email(addresses, subject, body, attachments=[]):
+    """
+    Send an email with optional attachments
+    Can be configured to just "fake" send emails, or send emails from
+    certain domains as prefixed emails to a developer.
+
+    Returns True on success (simulated or real) and False on known errors.
+    """
     if not roombaht_config.SEND_MAIL:
         logger.info("Would have sent email to %s, subject: %s", ','.join(addresses), subject)
-        return
+        return True
 
     real_addresses = []
     for address in addresses:
@@ -162,7 +169,7 @@ def send_email(addresses, subject, body, attachments=[]):
                 # otherwise just pretend to send the email
                 logger.debug("Not really sending noop dot com email to %s, subject: %s",
                              address, subject)
-                return
+                return True
 
     msg = EmailMessage(subject=subject,
                        body=body,
