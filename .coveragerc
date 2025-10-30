@@ -1,5 +1,11 @@
 [run]
 sigterm=true
+source =
+       reservations
+       party
+       waittime
+
+[report]
 omit =
      backend/reservations/tests/*
      backend/reservations/checks.py

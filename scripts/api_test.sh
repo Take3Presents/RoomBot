@@ -39,13 +39,15 @@ init() {
 }
 
 manage() {
-    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
+    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" \
+       --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
        "${ROOTDIR}/backend/manage.py" $*
 }
 
 run() {
     # first run tests with static fixtures
     source "${ROOTDIR}/test.env"
+    manage flush --noinput >> "$LOG" 2>&1
 
     manage loaddata test_admin
     manage loaddata test_users
