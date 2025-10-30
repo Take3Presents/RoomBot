@@ -16,12 +16,15 @@ usage() {
 }
 
 start() {
+    if [ -e "$SQLITE" ] ; then
+	rm "$SQLITE"
+    fi
     cd "${BACKEND}"
     uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" \
        --group dev --env-file "${ROOTDIR}/test.env" coverage run \
        manage.py migrate >> "$LOG" 2>&1
     nohup uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml"  \
-	  --group dev --env-file "${ROOTDIR}/test.env" coverage run \
+	  --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
 	  manage.py \
 	  runserver --noreload --nothreading 0.0.0.0:8000 \
 	  < /dev/null >> "$LOG" 2>&1 & disown
@@ -29,9 +32,6 @@ start() {
 }
 
 stop() {
-    if [ -e "$SQLITE" ] ; then
-	rm "$SQLITE"
-    fi
     PIDS="$(pgrep -f '.*manage.py runserver.*')"
     if [ -n "$PIDS" ] ; then
 	for pid in $PIDS ; do

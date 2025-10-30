@@ -161,7 +161,7 @@ def create_rooms_main(cmd, args):
             if elem.placed_by != '' and not room.is_placed:
                 room.is_placed = True
 
-            room.available = False
+            room.is_available = False
         elif room.primary != '' and (not room.guest) and room.is_available:
             # Cannot unassign an already unavailable room
             room.primary = ''

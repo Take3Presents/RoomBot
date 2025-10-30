@@ -3,7 +3,7 @@ import logging
 import sys
 import re
 from django.utils.timezone import make_aware
-from django.db import models
+from django.db import models, transaction
 from reservations.constants import ROOM_LIST
 from dirtyfields import DirtyFieldsMixin
 from reservations.helpers import real_date
@@ -235,6 +235,7 @@ class Room(DirtyFieldsMixin, models.Model):
         raise UnknownProductError(product)
 
     @staticmethod
+    @transaction.atomic
     def swap(room_one, room_two):
         if room_two.name_take3 != room_two.name_take3:
             logger.warning("Attempt to swap mismatched room types %s (%s) - %s (%s)",

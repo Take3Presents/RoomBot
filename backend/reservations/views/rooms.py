@@ -180,6 +180,7 @@ def swap_request(request):
 
         requester_room_numbers = [x.room_number
                                   for x in Guest.objects.filter(email=requester_email,
+                                                                hotel=name_hotel,
                                                                 room_number__isnull=False)]
 
         swap_room = None
