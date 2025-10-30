@@ -19,7 +19,7 @@ class GuestManagementService:
             # also sometimes people transfer rooms to themselves
             # because why the frak not
             guest = Guest.objects.get(ticket=ticket_code, email=email)
-            if guest.room:
+            if guest.room_set.get():
                 logger.debug("Found existing ticket %s for %s with room %s %s",
                              ticket_code, email, guest.room.name_hotel, guest.room.number)
             else:

@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 
-set -e
+set -eu
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
 ROOTDIR="${SCRIPTDIR%/*}"
+
+export COVERAGE_FILE="${ROOTDIR}/.coverage"
+export COVERAGE_RCFILE="${ROOTDIR}/.coveragerc"
 
 cleanup() {
     if [ -e "$SQLITE" ] ; then
         rm "$SQLITE"
     fi
     "${SCRIPTDIR}/test_infra.sh" stop
-    if [ -z "$SUCCESS" ] && [ -e "$LOG" ] ; then
+    if [ -z "${SUCCESS:-}" ] && [ -e "$LOG" ] ; then
         cat "$LOG"
     fi
     "${SCRIPTDIR}/test_infra.sh" report
@@ -36,8 +39,8 @@ init() {
 }
 
 manage() {
-    "${ROOTDIR}/backend/.venv/bin/coverage" \
-	run -a "${ROOTDIR}/backend/manage.py" $*
+    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
+       "${ROOTDIR}/backend/manage.py" $*
 }
 
 run() {

@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+set -eu
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
 ROOTDIR="${SCRIPTDIR%/*}"
 
 source "${ROOTDIR}/test.env"
 
-COVERAGEFILE="${ROOTDIR}/.coverage"
-export COVERAGE_RCFILE="${ROOTDIR}/.coveragerc"
 LOG="${ROOTDIR}/test.log"
 SQLITE="${ROOTDIR}/${ROOMBAHT_SQLITE}"
 BACKEND="${ROOTDIR}/backend"
@@ -19,11 +17,11 @@ usage() {
 
 start() {
     cd "${BACKEND}"
-    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage run --data-file "$COVERAGEFILE" \
-		--source="reservations,party,waittime" \
-		manage.py migrate >> "$LOG" 2>&1
-    nohup uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml"  --group dev --env-file "${ROOTDIR}/test.env" coverage run --data-file "$COVERAGEFILE" \
-	  --source="backend" --append \
+    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" \
+       --group dev --env-file "${ROOTDIR}/test.env" coverage run \
+       manage.py migrate >> "$LOG" 2>&1
+    nohup uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml"  \
+	  --group dev --env-file "${ROOTDIR}/test.env" coverage run \
 	  manage.py \
 	  runserver --noreload --nothreading 0.0.0.0:8000 \
 	  < /dev/null >> "$LOG" 2>&1 & disown
@@ -45,7 +43,7 @@ stop() {
 }
 
 report() {
-        uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage report --data-file "$COVERAGEFILE" -m --skip-covered
+        uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage report -m --skip-covered
 }
 
 if [ $# == 0 ] ; then
