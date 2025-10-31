@@ -13,6 +13,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--max-rooms',
                             help='Maximum rooms to assign per admin. 0 is no limit.',
+                            type=int,
                             default=5)
         parser.add_argument('--hotel-name',
                             default="all",
@@ -34,12 +35,16 @@ class Command(BaseCommand):
 
         free_rooms = Room.objects.filter(is_available=True)
         if kwargs['hotel_name'] != 'all':
-            free_rooms = free_rooms.filter(name_hotel=kwargs['hotel'])
+            free_rooms = free_rooms.filter(name_hotel=kwargs['hotel_name'])
 
         admins = Staff.objects.all()
 
+        assigned_rooms = {}
         for room in free_rooms:
             admin_guest = admins.order_by('?').first().guest
+            if assigned_rooms.get(admin_guest.email, 0) > kwargs['max_rooms']:
+                continue
+
             guest = Guest(name=admin_guest.name,
                           email=admin_guest.email,
                           jwt=admin_guest.jwt,
@@ -58,3 +63,5 @@ class Command(BaseCommand):
             else:
                 room.save()
                 self.stdout.write(f"Assigned {msg}")
+
+            assigned_rooms[admin_guest.email] = assigned_rooms.get(admin_guest.email, 0) + 1

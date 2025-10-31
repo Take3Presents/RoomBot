@@ -2,11 +2,17 @@ import logging
 import traceback
 from datetime import datetime
 from typing import Dict, Any
+from pathlib import Path
 
+from reservations.helpers import ingest_csv
 from .guest_processing_service import GuestProcessingService
 from .guest_validation_service import GuestValidationService
 from .room_counts import RoomCounts
-
+from reservations.config import SP_API_KEY
+from reservations.ingest_models import SecretPartyGuestIngest
+from reservations.secret_party import SecretPartyClient, SecretPartyAPIError, \
+    SecretPartyAuthError
+from reservations.services.orphan_reconciliation_service import OrphanReconciliationService
 
 class GuestIngestionService:
 
@@ -50,9 +56,6 @@ class GuestIngestionService:
             raise ValueError(f"Unsupported source: {source_name}")
 
     def _fetch_from_secretparty(self) -> Dict[str, Any]:
-        from ..secret_party import SecretPartyClient, SecretPartyAPIError, SecretPartyAuthError
-        from ..config import SP_API_KEY
-
         self.logger.info("Fetching data from SecretParty API")
 
         try:
@@ -79,8 +82,6 @@ class GuestIngestionService:
             raise
 
     def _fetch_from_csv(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        from ..helpers import ingest_csv
-        from pathlib import Path
 
         file_path = config.get('file_path')
         if not file_path or not Path(file_path).exists():
@@ -112,7 +113,6 @@ class GuestIngestionService:
             raise ValueError(f"No transformer for source: {source_name}")
 
     def _transform_secretparty_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
-        from ..ingest_models import SecretPartyGuestIngest
 
         self.logger.info(f"Transforming {len(raw_data.get('tickets', []))} SecretParty tickets")
 
@@ -137,7 +137,6 @@ class GuestIngestionService:
         }
 
     def _transform_csv_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
-        from ..ingest_models import SecretPartyGuestIngest
 
         guests = []
 
@@ -173,7 +172,6 @@ class GuestIngestionService:
                 guest_objects_list.append(guest)
             elif isinstance(guest, dict):
                 guests_dict_list.append(guest)
-                from ..ingest_models import SecretPartyGuestIngest
                 guest_obj = SecretPartyGuestIngest(**guest)
                 guest_objects_list.append(guest_obj)
             else:
@@ -199,7 +197,6 @@ class GuestIngestionService:
 
         room_counts = RoomCounts()
 
-        from ..services.orphan_reconciliation_service import OrphanReconciliationService
         self.logger.info("Starting orphan reconciliation for %d guest objects", len(valid_guests))
         orphan_tickets = OrphanReconciliationService.reconcile_orphan_rooms(valid_guests, room_counts)
         self.logger.info("Orphan reconciliation complete, found %d orphan tickets", len(orphan_tickets))

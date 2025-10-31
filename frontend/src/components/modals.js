@@ -31,6 +31,9 @@ const handleSwapError = (error) => {
     if (error.response.status === 400) {
       const errorMsg = extractErrorMessage(error);
       swapError(errorMsg || "Unacceptable swap requested");
+    } else if (error.response.status == 500 && error.response.data.startsWith('Unable')) {
+      const errorMsg = extractErrorMessage(error);
+      swapError(errorMsg || "Server responded with error. contact placement@take3presents.com");
     } else {
       console.log("server responded");
       console.log(error.response.data);

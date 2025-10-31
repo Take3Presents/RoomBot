@@ -42,25 +42,11 @@ class TestGuestValidationService:
         service = GuestValidationService()
         assert service.is_transaction_ignored('NOT_IGNORED') is False
 
-    @patch('reservations.services.guest_validation_service.Room.derive_hotel')
-    @patch('reservations.config.GUEST_HOTELS', ['Ballys', 'Nugget'])
-    def test_is_valid_hotel_true(self, mock_derive_hotel):
-        mock_derive_hotel.return_value = 'Ballys'
-        service = GuestValidationService()
-        result = service.is_valid_hotel("Bally's - Standard 2 Queen")
+    def test_is_valid_hotel_true(self):
+        result = self.service.is_valid_hotel("Bally's - Standard 2 Queen")
         assert result is True
 
-    @patch('reservations.services.guest_validation_service.Room.derive_hotel')
-    @patch('reservations.config.GUEST_HOTELS', ['Ballys', 'Nugget'])
-    def test_is_valid_hotel_false(self, mock_derive_hotel):
-        mock_derive_hotel.return_value = 'Invalid Hotel'
-        service = GuestValidationService()
-        result = service.is_valid_hotel("Some Product")
-        assert result is False
-
-    @patch('reservations.services.guest_validation_service.Room.derive_hotel')
-    def test_is_valid_hotel_exception(self, mock_derive_hotel):
-        mock_derive_hotel.side_effect = Exception("Cannot derive hotel")
+    def test_is_valid_hotel_false(self):
         result = self.service.is_valid_hotel("Some Product")
         assert result is False
 

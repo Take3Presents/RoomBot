@@ -10,6 +10,7 @@ from reservations.services.orphan_reconciliation_service import OrphanReconcilia
 from reservations.services.guest_processing_service import GuestProcessingService
 from reservations.services.guest_ingestion_service import GuestIngestionService
 
+
 from reservations.models import Guest
 
 
@@ -431,10 +432,17 @@ class TestGuestProcessingService(TestCase):
             self.service.process_guest_entries(guest_rows, room_counts, orphan_tickets)
             mock_handle_new.assert_not_called()
 
+    @patch('reservations.services.guest_processing_service.Room')
     @patch('reservations.services.guest_processing_service.Guest.objects')
-    def test_handle_existing_guest(self, mock_guest_objects):
+    def test_handle_existing_guest(self, mock_guest_objects, mock_room_model):
+        # Simulate no placed room exists for this ticket
+        mock_room_model.DoesNotExist = type('DoesNotExist', (Exception,), {})
+        mock_room_model.objects.get.side_effect = mock_room_model.DoesNotExist
+
         existing_guest = Mock()
         existing_guest.jwt = "existing_jwt"
+        existing_guest.email = "existing@example.com"
+
         guest_entries = Mock()
         guest_entries.filter.return_value.count.return_value = 0
         guest_entries.__getitem__ = Mock(return_value=existing_guest)
@@ -448,8 +456,10 @@ class TestGuestProcessingService(TestCase):
                 room_counts = Mock()
                 guest_obj = Mock()
                 guest_obj.product = "Standard Room"
+                guest_obj.ticket_code = "T123"
 
                 self.service._handle_existing_guest(guest_obj, guest_entries, room_counts)
+                mock_room_model.objects.get.assert_called_once_with(sp_ticket_id="T123", guest=None)
                 mock_update_guest.assert_called_once()
                 room_counts.allocated.assert_called_once()
 
@@ -458,8 +468,8 @@ class TestGuestIngestionService(TestCase):
     def setUp(self):
         self.service = GuestIngestionService()
 
-    @patch('reservations.secret_party.SecretPartyClient')
-    @patch('reservations.config.SP_API_KEY', 'test_key')
+    @patch('reservations.services.guest_ingestion_service.SecretPartyClient')
+    @patch('reservations.services.guest_ingestion_service.SP_API_KEY', 'test_key')
     def test_fetch_from_secretparty(self, mock_client_class):
         mock_client = Mock()
         mock_client.export_tickets.return_value = [
@@ -482,8 +492,8 @@ class TestGuestIngestionService(TestCase):
         self.assertEqual(len(result['tickets']), 2)
         self.assertEqual(result['metadata']['total_records'], 2)
 
-    @patch('reservations.helpers.ingest_csv')
-    @patch('pathlib.Path.exists')
+    @patch('reservations.services.guest_ingestion_service.ingest_csv')
+    @patch('reservations.services.guest_ingestion_service.Path.exists')
     def test_fetch_from_csv_clean_data(self, mock_path_exists, mock_ingest_csv):
         mock_path_exists.return_value = True
 
@@ -505,8 +515,8 @@ class TestGuestIngestionService(TestCase):
         self.assertEqual(result['metadata']['total_records'], 2)
         self.assertEqual(result['metadata']['fields_found'], mock_fields)
 
-    @patch('reservations.helpers.ingest_csv')
-    @patch('pathlib.Path.exists')
+    @patch('reservations.services.guest_ingestion_service.ingest_csv')
+    @patch('reservations.services.guest_ingestion_service.Path.exists')
     def test_fetch_from_csv_file_not_found(self, mock_path_exists, mock_ingest_csv):
         config = {'file_path': '/test/nonexistent.csv'}
         mock_path_exists.return_value = False
@@ -560,7 +570,7 @@ class TestGuestIngestionService(TestCase):
         self.assertEqual(result['source'], 'csv')
         self.assertIn('ingestion_timestamp', result)
 
-    @patch('reservations.ingest_models.SecretPartyGuestIngest')
+    @patch('reservations.services.guest_ingestion_service.SecretPartyGuestIngest')
     def test_transform_csv_data(self, mock_guest_ingest):
         mock_guest_obj1 = Mock()
         mock_guest_obj2 = Mock()

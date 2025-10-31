@@ -62,7 +62,8 @@ def authenticate_admin(request):
 def unauthenticated():
     return Response("[-] Unauthorized", status=status.HTTP_401_UNAUTHORIZED)
 
-def reset_otp(email):
+def do_reset(guests):
+    email = guests[0].email
     jenv = Environment(loader=PackageLoader('reservations'))
     template = jenv.get_template('reset.j2')
     new_pass = phrasing()
@@ -70,17 +71,30 @@ def reset_otp(email):
         'new_pass': new_pass
     }
     body_text = template.render(objz)
+    logger.info("Resetting password for %s", email)
+    for guest in guests:
+        guest.jwt = new_pass
+        guest.save()
+
+    send_email([email],
+               'RoomService RoomBaht - Password Reset',
+               body_text
+               )
+
+def reset_otp(email):
     guests = Guest.objects.filter(email=email, can_login=True)
     if guests.count() > 0:
-        logger.info("Resetting password for %s", email)
-        for guest in guests:
-            guest.jwt = new_pass
-            guest.save()
-
-        send_email([email],
-                       'RoomService RoomBaht - Password Reset',
-                       body_text
-                       )
+        do_reset(guests)
+        return
 
     else:
-        logger.warning("Password reset for unknown user %s", email)
+        try:
+            staff = Staff.objects.get(email=email)
+            if staff:
+                do_reset(Guest.objects.filter(email=email))
+                return
+
+        except Staff.DoesNotExist:
+            pass
+
+    logger.warning("Password reset for unknown user %s", email)

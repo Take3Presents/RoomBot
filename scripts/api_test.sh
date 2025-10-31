@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-set -e
+set -eu
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
 ROOTDIR="${SCRIPTDIR%/*}"
 
+export COVERAGE_FILE="${ROOTDIR}/.coverage"
+export COVERAGE_RCFILE="${ROOTDIR}/.coveragerc"
+
 cleanup() {
-    if [ -e "$SQLITE" ] ; then
-        rm "$SQLITE"
-    fi
     "${SCRIPTDIR}/test_infra.sh" stop
-    if [ -z "$SUCCESS" ] && [ -e "$LOG" ] ; then
+    if [ -z "${SUCCESS:-}" ] && [ -e "$LOG" ] ; then
         cat "$LOG"
     fi
     "${SCRIPTDIR}/test_infra.sh" report
@@ -36,13 +36,15 @@ init() {
 }
 
 manage() {
-    "${ROOTDIR}/backend/.venv/bin/coverage" \
-	run -a "${ROOTDIR}/backend/manage.py" $*
+    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" \
+       --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
+       "${ROOTDIR}/backend/manage.py" $*
 }
 
 run() {
     # first run tests with static fixtures
     source "${ROOTDIR}/test.env"
+    manage flush --noinput >> "$LOG" 2>&1
 
     manage loaddata test_admin
     manage loaddata test_users
@@ -67,17 +69,17 @@ run() {
     # then run tests following typical import data flow
     manage flush --noinput >> "$LOG" 2>&1
     manage migrate >> "$LOG" 2>&1
+    manage loaddata test_admin
     manage create_staff "${ROOTDIR}/samples/exampleMainStaffList.csv"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleBallysRoomList.csv" \
-           --hotel ballys --preserve --force --blank-placement-is-available \
+           --hotel ballys --preserve --force \
            --default-check-in="1999/1/1" --default-check-out="1999/1/10"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleNuggetRoomList.csv" \
-           --hotel nugget --preserve --force --blank-placement-is-available  \
+           --hotel nugget --preserve --force \
            --default-check-in "1999/1/1" --default-check-out "1999/1/10"
 
-    manage loaddata test_admin
     "$TAVERN" backend/tavern/test_guests.tavern.yml
     manage room_list >> "$LOG" 2>&1
     manage room_list -t Queen >> "$LOG" 2>&1
@@ -93,10 +95,6 @@ export PYTHONPATH="${ROOTDIR}/backend/tavern"
 export ROOTDIR
 TAVERN="${ROOTDIR}/backend/.venv/bin/tavern-ci"
 LOG="${ROOTDIR}/test.log"
-
-if [ -e "$SQLITE" ] ; then
-    rm -rf "$SQLITE"
-fi
 
 export ROOMBAHT_CONFIG="${ROOTDIR}/test.env"
 

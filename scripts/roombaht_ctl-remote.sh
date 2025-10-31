@@ -7,6 +7,7 @@ FRONTEND_ARTIFACT="/tmp/roombaht-frontend.tgz"
 
 BACKEND_DIR="/opt/roombaht-backend"
 FRONTEND_DIR="/opt/roombaht-frontend"
+export PATH="${PATH}:${HOME}/.local/bin"
 
 NOW="$(date '+%m%d%Y-%H%M')"
 OLD_RELEASES=5
@@ -44,25 +45,25 @@ cleanup() {
 
 # determine db connection details
 db_connection() {
-    ACCOUNT_ID="$(aws sts get-caller-identity --query 'Account' --output text 2> /dev/null)"
+    ACCOUNT_ID="$(aws sts get-caller-identity --query 'Account' --output text 2> /dev/null || true)"
     if [ -z "$ACCOUNT_ID" ] ; then
 	problems "Unable to look up AWS Account ID"
     fi
-    REGION="$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone 2> /dev/null)"
+    REGION="$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone 2> /dev/null || true)"
     REGION="$(sed 's/[a-z]$//' <<< "$REGION")"
     if [ -z "$REGION" ] ; then
 	problems "Unable to look up AWS Region"
     fi
     RDS_ARN="arn:aws:rds:${REGION}:${ACCOUNT_ID}:db:roombaht"
-    ROOMBAHT_DB_HOST="$(aws rds describe-db-instances --region "${REGION}" --db-instance-identifier "${RDS_ARN}" --query 'DBInstances[0].Endpoint.Address' --output text 2> /dev/null)"
+    ROOMBAHT_DB_HOST="$(aws rds describe-db-instances --region "${REGION}" --db-instance-identifier "${RDS_ARN}" --query 'DBInstances[0].Endpoint.Address' --output text 2> /dev/null || true)"
     if [ -z "$ROOMBAHT_DB_HOST" ] ; then
 	problems "Unable to look up RDS Address"
     fi
-    SECRET_ARN="$(aws rds describe-db-instances --region "${REGION}" --db-instance-identifier "${RDS_ARN}" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text 2> /dev/null)"
+    SECRET_ARN="$(aws rds describe-db-instances --region "${REGION}" --db-instance-identifier "${RDS_ARN}" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text 2> /dev/null || true)"
     if [ -z "$SECRET_ARN" ] ; then
 	problems "Unable to look up RDS Auth ARN"
     fi
-    PGPASSWORD="$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --region "${REGION}" --query SecretString --output text | jq -Mr '.password')"
+    PGPASSWORD="$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --region "${REGION}" --query SecretString --output text | jq -Mr '.password' || true)"
     if [ -z "$PGPASSWORD" ] ; then
 	problems "Unable to look up RDS Password"
     fi
@@ -85,6 +86,29 @@ db_clone() {
 db_snapshot() {
     local DEST_DB="${ROOMBAHT_DB}-${NOW}"
     createdb -h "$ROOMBAHT_DB_HOST" -U root -T "$ROOMBAHT_DB" "$DEST_DB"
+}
+
+# create a pre-clone snapshot (skip if target DB doesn't exist)
+db_pre_clone_snapshot() {
+    local DEST_DB="${ROOMBAHT_DB}-pre-clone-${NOW}"
+    if [ "$(psql -h "$ROOMBAHT_DB_HOST" -U root -Atc "select 1 from pg_database where datname='${ROOMBAHT_DB}'" postgres 2> /dev/null)" == "1" ] ; then
+	createdb -h "$ROOMBAHT_DB_HOST" -U root -T "$ROOMBAHT_DB" "$DEST_DB"
+	echo "Pre-clone snapshot created: ${DEST_DB}"
+    else
+	echo "No existing target DB '${ROOMBAHT_DB}' found; skipping pre-clone snapshot"
+    fi
+}
+
+
+db_snapshot_list() {
+    local db_esc
+    db_esc=$(printf '%s' "$ROOMBAHT_DB" | sed "s/'/''/g")   # escape single quotes
+    psql -h "$ROOMBAHT_DB_HOST" -U root -At -c \
+      "SELECT datname
+       FROM pg_database
+       WHERE datname = '${db_esc}' OR datname LIKE '${db_esc}-%'
+       ORDER BY datname;" \
+      postgres 2>/dev/null
 }
 
 # create database if needed and then issue migrations
@@ -147,7 +171,7 @@ backend_config() {
 	-e "s/@URL_SCHEMA@/${ROOMBAHT_URL_SCHEMA}/" \
 	"${BACKEND_DIR}/config/roombaht-systemd.conf" \
 	> "/etc/systemd/system/roombaht.service"
-    chmod o-rwx "/etc/systemd/system/roombaht.service"
+    chmod 0644 "/etc/systemd/system/roombaht.service"
     systemctl daemon-reload
     sed -e "s/@SECRET_KEY@/${ROOMBAHT_DJANGO_SECRET_KEY}/" \
 	-e "s/@EMAIL_HOST_USER@/${ROOMBAHT_EMAIL_HOST_USER}/" \
@@ -247,9 +271,6 @@ elif [ "$ACTION" == "load_rooms" ] ; then
 	"/opt/roombaht-backend/manage.py" \
 	create_rooms "$ROOM_FILE" --hotel "$HOTEL" --preserve
 elif [ "$ACTION" == "clone_db" ] ; then
-    if [ "$ROOMBAHT_DB" == "roombaht" ] ; then
-	problems "can't clone prod to prod"
-    fi
     SOURCE_DB="roombaht"
     while getopts "d:" arg; do
 	case $arg in
@@ -262,6 +283,8 @@ elif [ "$ACTION" == "clone_db" ] ; then
 	esac
     done
     db_connection
+    # create a pre-clone snapshot before wiping the target
+    db_pre_clone_snapshot
     db_wipe
     db_clone
 elif [ "$ACTION" == "wipe" ] ; then
@@ -271,6 +294,9 @@ elif [ "$ACTION" == "wipe" ] ; then
 elif [ "$ACTION" == "snapshot" ] ; then
     db_connection
     db_snapshot
+elif [ "$ACTION" == "snapshot-list" ] ; then
+    db_connection
+    db_snapshot_list
 elif [ "$ACTION" == "manage" ] ; then
     env_check
     "/opt/roombaht-backend/.venv/bin/python3" \

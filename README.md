@@ -16,7 +16,7 @@ The RoomBot service allows guests to view which rooms they are assigned, and iss
 
 Additional details on these steps are available in this document.
 
-Contact an adult to request the contents of the "secret file". Put these contents into the `.secret` file in your local working copy.
+* Contact an adult to request the contents of the "secret file". Put these contents into the `.secret` file in your local working copy.
 
 ## Local Development
 
@@ -35,7 +35,7 @@ At this point, the local environment will be live at `http://localhost:3000/` an
 
 ## AWS Deployment
 
-These instructions are for staging, however production is quite similar.
+These instructions are for staging, however production is quite similar. Terraform is used to manage the infrastructure, and the `roombaht_ctl` is used to interact with the deployed host, including deploying build archives.
 
 ```sh
 $ cd terraform
@@ -224,34 +224,6 @@ Images are kinda like data? There is a script that will either work based on an 
 ```
 ./scripts/fetch-images
 ./scripts/fetch-images /path/to/gdrive/images
-```
-
-## Data Sanitization
-
-There is a script which will take live data from the room list spreadsheet and a Secret Party export and appropriately anonymize it. For the room list, some randomness may be applied, and there are configurable weights. All guests and placers listed in the room list will be sourced from the original room list.
-
-For the guest list, the following changes are made
-
-* The first and last name are changed
-* The email is changed
-  * Duplicate emails (per name) are mapped down to a single email
-* Transfer to / from is mapped to the appropriate names
-* Phone number is randomly generated per name
-
-For the room list, the following changes are made
-
-* The first and last name are changed.
-  * Secondary names, if present, are also changed
-* Placers (art and manual room) are selected from a randomly generated group.
-* All blank `Placed By` fields are replaced with `Roombaht`
-* Optionally, placed rooms may be randomly generated, ignoring original selections (weight name `placed`, default 10%).
-* Optionally, secondary names may be randomly added to placed rooms (weight name `secondary`, default 50%).
-* Art room types are always selected from a randomly generated group.
-* Optionally, a random selection of rooms will become art rooms (weight name `art`, default 5%).
-* Optionally, placed rooms have a chance to be set as changable (weight name `changeable`, default 50%)
-
-```
-python ./backend/scripts/massage_csv.py /tmp/SecretPartyExport.csv /tmp/RoomsSheetExport.csv --weight placed:30,art:10
 ```
 
 ## Database Manipulation
