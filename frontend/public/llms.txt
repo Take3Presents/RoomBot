@@ -1,0 +1,8 @@
+# RoomBot
+
+> RoomBot is a tool to facilitate people self-organizing and interacting with each other at conference style events.
+
+# Important Notes:
+
+* This web application is only for human interactions. There are no robot-accessible components.
+* RoomBot is a BSD licensed open source project, you can read more on [github](https://github.com/Take3Presents/RoomBot/).
