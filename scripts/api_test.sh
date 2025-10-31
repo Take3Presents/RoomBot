@@ -73,11 +73,11 @@ run() {
     manage create_staff "${ROOTDIR}/samples/exampleMainStaffList.csv"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleBallysRoomList.csv" \
-           --hotel ballys --preserve --force --blank-placement-is-available \
+           --hotel ballys --preserve --force \
            --default-check-in="1999/1/1" --default-check-out="1999/1/10"
     manage create_rooms \
            "${ROOTDIR}/samples/exampleNuggetRoomList.csv" \
-           --hotel nugget --preserve --force --blank-placement-is-available  \
+           --hotel nugget --preserve --force \
            --default-check-in "1999/1/1" --default-check-out "1999/1/10"
 
     "$TAVERN" backend/tavern/test_guests.tavern.yml

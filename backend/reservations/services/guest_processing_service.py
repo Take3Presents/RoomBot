@@ -24,16 +24,15 @@ class GuestProcessingService:
         # First check if there's a placed room with matching sp_ticket_id
         try:
             placed_room = Room.objects.get(sp_ticket_id=guest_obj.ticket_code, guest=None)
-            logger.info("Found placed room %s %s for new guest %s with ticket %s",
+            logger.debug("Found placed room %s %s for new guest %s with ticket %s",
                        placed_room.name_hotel, placed_room.number, guest_obj.email, guest_obj.ticket_code)
             room = placed_room
         except Room.DoesNotExist:
             # No placed room found, find available room
             room = self.room_service.find_room(guest_obj.product)
         except Room.MultipleObjectsReturned:
-            logger.error("Multiple rooms with sp_ticket_id %s found, using room assignment service",
-                        guest_obj.ticket_code)
-            room = self.room_service.find_room(guest_obj.product)
+            raise Exception("Multiple rooms with sp_ticket_id %s found!",
+                            guest_obj.ticket_code)
 
         if not room:
             logger.warning("No empty rooms for product %s available for %s",
@@ -51,8 +50,18 @@ class GuestProcessingService:
         Existing guests may have been manually placed, or may
         already have a room and have received a transfer.
         """
-        room = self.room_service.find_room(guest_obj.product)
-        logger.debug("Attempting to place existing user with a %s", guest_obj.product)
+        try:
+            placed_room = Room.objects.get(sp_ticket_id=guest_obj.ticket_code, guest=None)
+            logger.debug("Found placed room %s %s for existing guest %s with ticket %s",
+                        placed_room.name_hotel, placed_room.number, guest_obj.email, guest_obj.ticket_code)
+            room = placed_room
+        except Room.DoesNotExist:
+            logger.debug("Attempting to place existing user with a %s", guest_obj.product)
+            room = self.room_service.find_room(guest_obj.product)
+        except Room.MultipleObjectsReturned:
+            raise Exception("Multiple rooms with sp_ticket_id %s found!",
+                            guest_obj.ticket_code)
+
         if not room:
             logger.warning("No empty rooms for product %s available for %s",
                            guest_obj.product, guest_entries[0].email)
