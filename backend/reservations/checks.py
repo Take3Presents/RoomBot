@@ -1,4 +1,5 @@
 from django.core.checks import Error, Warning, Info, register
+from django.core.exceptions import MultipleObjectsReturned
 from reservations.models import Room, Guest
 
 
@@ -29,11 +30,12 @@ def guest_drama_check(app_configs, **kwargs):
     for guest in guests:
         if guest.jwt == '' and guest.can_login:
             errors.append(Warning(f"Guest {guest.email} has an empty jwt field!",
-                                  hint="Reset password via ux or user_edit"),
-                          obj=guest)
+                                  hint="Reset password via ux or user_edit",
+                                  obj=guest))
 
         if guest.ticket and Guest.objects.filter(ticket = guest.ticket).count() > 1:
-            errors.append(Error(f"Guest {guest.email}, ticket {guest.ticket} shared with other users"))
+            errors.append(Error(f"Guest {guest.email}, ticket {guest.ticket} shared with other users",
+                                obj=guest))
 
         guest_transfer_chain = ticket_chain(guest)
         chain_tail = [x for x in guest_transfer_chain if x.transfer == '']
@@ -58,11 +60,35 @@ def guest_drama_check(app_configs, **kwargs):
                     errors.append(Warning(f"Unable to find corresponding room for {guest.email}, ticket {guest.ticket}",
                                           hint="Reimporting SP or manual reconciliation (or bug!)",
                                           obj=guest))
+                except MultipleObjectsReturned:
+                    errors.append(Error(f"Multiple rooms found for hotel={chain_guest.hotel}, number={chain_guest.room_number} (guest {guest.email})",
+                                        hint="Database corruption - manual reconciliation required",
+                                        obj=guest))
 
     multi_room = [','.join([str(x) for x in Guest.objects.all() if x.room_set.count() > 1])]
     if len([x for x in multi_room if len(x) > 0]) > 0:
         errors.append(Error(f"Guest records with multiple associated rooms {multi_room}"))
 
+    # Check for tickets assigned to multiple room entries
+    ticket_counts = {}
+    for room in Room.objects.exclude(sp_ticket_id__isnull=True).exclude(sp_ticket_id=''):
+        ticket = room.sp_ticket_id
+        if ticket not in ticket_counts:
+            ticket_counts[ticket] = []
+        ticket_counts[ticket].append(f"{room.name_hotel} {room.number}")
+
+    for ticket, rooms in ticket_counts.items():
+        if len(rooms) > 1:
+            errors.append(Error(f"Ticket {ticket} assigned to multiple rooms: {', '.join(rooms)}",
+                                hint="Manually reconcile room assignments"))
+
+    # Check for tickets assigned to multiple guest entries
+    for guest in guests:
+        if guest.ticket and Guest.objects.filter(ticket=guest.ticket).count() > 1:
+            duplicate_guests = Guest.objects.filter(ticket=guest.ticket)
+            guest_list = ', '.join([f"{g.email} (id={g.id})" for g in duplicate_guests])
+            errors.append(Error(f"Ticket {guest.ticket} assigned to multiple guest entries: {guest_list}",
+                                hint="Manually reconcile guest records"))
 
     return errors
 
@@ -97,6 +123,9 @@ def room_drama_check(app_configs, **kwargs):
             except Guest.DoesNotExist:
                 errors.append(Error(f"Original owner of {room.name_hotel} {room.number} with ticket {room.sp_ticket_id} not found",
                                     hint='Good luck, I guess?', obj=room))
+            except MultipleObjectsReturned:
+                errors.append(Error(f"Multiple guests found with ticket {room.sp_ticket_id} for room {room.name_hotel} {room.number}",
+                                    hint='Database corruption - manual reconciliation required', obj=room))
 
             if room.guest is None:
                 errors.append(Error(f"Room {room.number} ({room.name_hotel}) sp_ticket_id {room.sp_ticket_id} missing guest",
@@ -119,6 +148,9 @@ def room_drama_check(app_configs, **kwargs):
                 except Guest.DoesNotExist:
                     errors.append(Error(f"Room {room.number} ({room.name_hotel}) Ticket {room.sp_ticket_id} transfer owner not found",
                                         hint='Good luck, I guess?', obj=room))
+                except MultipleObjectsReturned:
+                    errors.append(Error(f"Multiple guests found with transfer={room.sp_ticket_id} for room {room.name_hotel} {room.number}",
+                                        hint='Database corruption - manual reconciliation required', obj=room))
 
         # general corruption which could bubble up during orm/sql manipulation
         if room.check_in is None:
