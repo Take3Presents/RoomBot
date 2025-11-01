@@ -235,6 +235,20 @@ stages:
     response:
       status_code: 400
 
+  - name: "request a swap for a empty room"
+    request:
+      url: "http://localhost:8000/api/swap_request/"
+      method: "POST"
+      json:
+        jwt: "{jwt_token}"
+        number: "506"
+        contact_info: "some words"
+        hotel: "Ballys"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 400
+
   - name: "request a swap"
     request:
       url: "http://localhost:8000/api/swap_request/"
@@ -408,6 +422,20 @@ stages:
                 swap_phrase:
                   type: "str"
                   required: true
+
+  - name: "get ur swap on oops incompatible room"
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      method: "POST"
+      json:
+        jwt: "{jwt_token}"
+        number: "502"
+        hotel: "Ballys"
+        swap_code: "{swap_code}"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 400
 
   - name: "get ur swap on oops bad code"
     request:

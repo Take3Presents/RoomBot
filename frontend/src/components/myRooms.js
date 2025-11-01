@@ -51,6 +51,8 @@ export default class MyRoomsTable extends React.Component {
         this.setState({errorMessage: error.message});
         if (error.response) {
 	  if (error.response.status === 401) {
+	    clearInterval(this.state.refreshTimer);
+	    this.state.refreshTimer = null;
 	    this.setState({error: 'auth'});
 	  } else {
 	    console.log(error.response);
@@ -92,8 +94,7 @@ export default class MyRoomsTable extends React.Component {
 					  STORY_HEADERS.unshift({
 					    prop: "name_hotel",
 					    title: "Hotel",
-					    isSortable: true,
-					    isFilterable: true
+					    isSortable: true
 					  });
 					}
     return STORY_HEADERS;

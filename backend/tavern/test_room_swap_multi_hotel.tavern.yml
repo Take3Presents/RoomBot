@@ -253,6 +253,18 @@ stages:
     response:
       status_code: 400
 
+  - name: "need hotel to initiate swap"
+    request:
+      url: "http://localhost:8000/api/swap_gen/"
+      method: "POST"
+      json:
+        number: "501"
+        jwt: "{jwt_token}"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 400
+
   - name: "initiate a swap"
     request:
       url: "http://localhost:8000/api/swap_gen/"
@@ -322,7 +334,21 @@ stages:
         jwt: "{jwt_token}"
         number: "500"
         hotel: "Ballys"
-        swap_code: "lol butts"
+        swap_code: "{swap_code}"
+      headers:
+        content-type: "application/json"
+    response:
+      status_code: 400
+
+  - name: "get ur swap on oops incompatible room"
+    request:
+      url: "http://localhost:8000/api/swap_it_up/"
+      method: "POST"
+      json:
+        jwt: "{jwt_token}"
+        number: "502"
+        hotel: "Nugget"
+        swap_code: "{swap_code}"
       headers:
         content-type: "application/json"
     response:

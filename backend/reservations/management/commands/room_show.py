@@ -38,7 +38,7 @@ class Command(BaseCommand):
         if room.is_available:
             flags.append('available')
 
-        if room.is_swappable:
+        if room.swappable():
             flags.append('swappable')
 
         if room.is_placed:
@@ -64,7 +64,7 @@ class Command(BaseCommand):
         else:
             details = f"{details} Check-out: Unknown"
 
-        details += f" SP ticket: '{room.sp_ticket_id}'"
+        details += f" SP ticket: {room.sp_ticket_id if room.sp_ticket_id else 'n/a'}"
 
         self.stdout.write(desc)
         self.stdout.write(details)

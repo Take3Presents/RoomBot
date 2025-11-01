@@ -119,19 +119,31 @@ ROOM_LIST = {
 }
 
 FLOORPLANS = {
-    3: ["ballys_3rd.png", "ballys_3rd_thumb.png"],
-    4: ["ballys_4th.png", "ballys_4th_thumb.png"],
-    5: ["ballys_5th.png", "ballys_5th_thumb.png"],
-    6: ["ballys_6th.png", "ballys_6th_thumb.png"],
-    7: ["ballys_7th.png", "ballys_7th_thumb.png"],
-    8: ["ballys_8th.png", "ballys_8th_thumb.png"],
-    9: ["ballys_9th.png", "ballys_9th_thumb.png"],
-    10: ["ballys_10th.png", "ballys_10th_thumb.png"],
-    11: ["ballys_11th.png", "ballys_11th_thumb.png"],
-    12: ["ballys_12th.png", "ballys_12th_thumb.png"],
-    13: ["ballys_13th.png", "ballys_13th_thumb.png"],
-    14: ["ballys_14th.png", "ballys_14th_thumb.png"],
-    15: ["ballys_15th.png", "ballys_15th_thumb.png"],
-    16: ["ballys_16th.png", "ballys_16th_thumb.png"],
-    17: ["ballys_17th.png", "ballys_17th_thumb.png"]
+    'ballys': {
+        3: ["ballys_3rd.png", "ballys_3rd_thumb.png"],
+        4: ["ballys_4th.png", "ballys_4th_thumb.png"],
+        5: ["ballys_5th.png", "ballys_5th_thumb.png"],
+        6: ["ballys_6th.png", "ballys_6th_thumb.png"],
+        7: ["ballys_7th.png", "ballys_7th_thumb.png"],
+        8: ["ballys_8th.png", "ballys_8th_thumb.png"],
+        9: ["ballys_9th.png", "ballys_9th_thumb.png"],
+        10: ["ballys_10th.png", "ballys_10th_thumb.png"],
+        11: ["ballys_11th.png", "ballys_11th_thumb.png"],
+        12: ["ballys_12th.png", "ballys_12th_thumb.png"],
+        13: ["ballys_13th.png", "ballys_13th_thumb.png"],
+        14: ["ballys_14th.png", "ballys_14th_thumb.png"],
+        15: ["ballys_15th.png", "ballys_15th_thumb.png"],
+        16: ["ballys_16th.png", "ballys_16th_thumb.png"],
+        17: ["ballys_17th.png", "ballys_17th_thumb.png"]
+    },
+    'nugget': {
+        1: ["nugget_1st.png", "nugget_1st_thumb.png"],
+        2: ["nugget_2nd.png", "nugget_2nd_thumb.png"],
+        3: ["nugget_3rd.png", "nugget_3rd_thumb.png"],
+        4: ["nugget_4th.png", "nugget_5th_thumb.png"],
+        5: ["nugget_5th.png", "nugget_5th_thumb.png"],
+        6: ["nugget_6th.png", "nugget_6th_thumb.png"],
+        7: ["nugget_7th.png", "nugget_7th_thumb.png"],
+        8: ["nugget_8th.png", "nugget_8th_thumb.png"]
+    }
 }

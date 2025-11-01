@@ -42,3 +42,7 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 415,Queen,,,,,,,,,True,Ballys-2Q
 416,King,,,,,,,,,True,Ballys-K
 417,Queen,,,,,,,,,True,Ballys-2Q
+# room will be transferred between sp updates
+1000,King,,Rock,Lobster,,,,Foo Placer,aaa026,False,Ballys-K
+# room will be bought during incremental
+1001,King,,Marble,Lobster,,,,Foo Placer,hha013,False,Ballys-K
