@@ -133,9 +133,9 @@ def room_list(request):
         for room in data['rooms']:
             try:
                 if(len(room['number'])==3):
-                    room["floorplans"]=FLOORPLANS[int(room["number"][:1])]
+                    room["floorplans"]=FLOORPLANS[room['name_hotel'].lower()][int(room["number"][:1])]
                 elif(len(room['number'])==4):
-                    room["floorplans"]=FLOORPLANS[int(room["number"][:2])]
+                    room["floorplans"]=FLOORPLANS[room['name_hotel'].lower()][int(room["number"][:2])]
             except KeyError:
                 logger.warning(f"no floor plan found for {room['name_hotel']} / {room['number']}")
 

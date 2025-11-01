@@ -6,6 +6,7 @@ ROOTDIR="${SCRIPTDIR%/*}"
 
 PUBLIC_DIR=""
 PRIVATE_DIR="With Smoking Icons"
+NUGGET_DIR="Golden Nugget Floor Maps"
 
 LAYOUTS_DIR="${ROOTDIR}/frontend/public/layouts"
 CACHE_DIR="${HOME}/.cache/roombot/floorplans"
@@ -27,6 +28,18 @@ is_png() {
     [ "$sig" = "89504e470d0a1a0a" ]
 }
 
+# return 0 if file is a PDF (checks magic header), 1 otherwise
+is_pdf() {
+    # PDF magic: 25 50 44 46 (%PDF)
+    # read first 4 bytes and compare
+    local sig
+    if [ ! -f "$1" ]; then
+        return 1
+    fi
+    sig=$(head -c 4 -- "$1" | od -An -tx1 | tr -d ' \n') || return 1
+    [ "$sig" = "25504446" ]
+}
+
 ordinal_suffix() {
     local n=$1
     local mod100=$(( n % 100 ))
@@ -43,22 +56,15 @@ ordinal_suffix() {
     esac
 }
 
-# normalize basename to lowercase and safe characters
-normalize_basename() {
-    echo "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/_/g' -e 's/_\+/_/g' -e 's/^_//' -e 's/_$//'
-}
-
-BASENAME="ballys"
 SRC_OVERRIDE_DIR=""
-
+SKIP_FETCH=""
 # Parse arguments: [-b|--base NAME] [IMAGES_DIR]
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -b|--base)
-            [ $# -ge 2 ] || problems "--base requires an argument"
-            BASENAME="$2"
-            shift 2
-            ;;
+	-s|--skip)
+	    SKIP_FETCH="ayy"
+	    shift
+	    ;;
         *)
             if [ -z "$SRC_OVERRIDE_DIR" ] && [ -d "$1" ] ; then
                 SRC_OVERRIDE_DIR="$1"
@@ -71,24 +77,29 @@ while [ $# -gt 0 ] ; do
 done
 
 if [ ! -d "$CACHE_DIR" ] ; then
-    mkdir -p "$CACHE_DIR"
+    mkdir -p "${CACHE_DIR}/ballys"
+    mkdir -p "${CACHE_DIR}/nugget"
 fi
 
-FOLDER="$("${SCRIPTDIR}/secrets" show staging FLOORPLANS_GOOGLE_FOLDER 2> /dev/null || true)"
-if [ -z "$FOLDER" ] ; then
-    problems "unable to extract folder id from staging secrets"
+BALLYS_FOLDER="$("${SCRIPTDIR}/secrets" show staging FLOORPLANS_BALLYS_FOLDER 2> /dev/null || true)"
+NUGGET_FOLDER="$("${SCRIPTDIR}/secrets" show staging FLOORPLANS_NUGGET_FOLDER 2> /dev/null || true)"
+if [ -z "$BALLYS_FOLDER" ] || [ -z "$NUGGET_FOLDER" ] ; then
+    problems "unable to extract folder ids from staging secrets"
 fi
 
-BASENAME_NORM=$(normalize_basename "$BASENAME")
-
-if [ -n "$SRC_OVERRIDE_DIR" ] ; then
-    echo "Using images from ${SRC_OVERRIDE_DIR}"
-    cp -vr "${SRC_OVERRIDE_DIR}/"* "$CACHE_DIR" || problems "Failed to copy from ${SRC_OVERRIDE_DIR}"
-else
-    "${ROOTDIR}/backend/.venv/bin/gdown" -cO "$CACHE_DIR" --folder "$FOLDER"
-    if [ "$(ls -1 "$CACHE_DIR" | wc -l)" = 0 ] ; then
-	problems "Nothing downloaded??"
+if [ -z "$SKIP_FETCH" ] ; then
+    if [ -n "$SRC_OVERRIDE_DIR" ] ; then
+	echo "Using images from ${SRC_OVERRIDE_DIR}"
+	cp -vr "${SRC_OVERRIDE_DIR}/"* "$CACHE_DIR" || problems "Failed to copy from ${SRC_OVERRIDE_DIR}"
+    else
+	"${ROOTDIR}/backend/.venv/bin/gdown" -cO "${CACHE_DIR}/ballys" --folder "$BALLYS_FOLDER"
+	"${ROOTDIR}/backend/.venv/bin/gdown" -cO "${CACHE_DIR}/nugget" --folder "$NUGGET_FOLDER"
+	if [ "$(ls -1 "$CACHE_DIR" | wc -l)" = 0 ] ; then
+	    problems "Nothing downloaded??"
+	fi
     fi
+else
+    echo "Skipping fetch, this will go poorly if you do not have cached images"
 fi
 
 if [ -d "$LAYOUTS_DIR" ] ; then
@@ -98,7 +109,7 @@ if [ ! -d "$LAYOUTS_DIR" ] ; then
     mkdir -p "$LAYOUTS_DIR"
 fi
 
-for image in "${CACHE_DIR}/${PUBLIC_DIR}"/* ; do
+for image in "${CACHE_DIR}/ballys/${PUBLIC_DIR}"/* ; do
     [ -f "$image" ] || continue
     if ! is_png "$image" ; then
         continue
@@ -113,8 +124,8 @@ for image in "${CACHE_DIR}/${PUBLIC_DIR}"/* ; do
     # convert to integer (strip leading zeros)
     floor_num=$((10#$floor_num))
     suf=$(ordinal_suffix "$floor_num")
-    DESTFILE="${BASENAME_NORM}_${floor_num}${suf}.png"
-    THUMBFILE="${BASENAME_NORM}_${floor_num}${suf}_thumb.png"
+    DESTFILE="ballys_${floor_num}${suf}.png"
+    THUMBFILE="ballys_${floor_num}${suf}_thumb.png"
     if [ ! -e "${LAYOUTS_DIR}/${DESTFILE}" ] ; then
 	cp "$image" "${LAYOUTS_DIR}/${DESTFILE}"
 	echo "Fetched ${SRCFILE} as ${DESTFILE}"
@@ -126,9 +137,10 @@ for image in "${CACHE_DIR}/${PUBLIC_DIR}"/* ; do
 	echo "Generated thumbnail ${THUMBFILE}"
     else
 	echo "Skipped ${DESTFILE} thumbnail"
+    fi
 done
 
-for image in "${CACHE_DIR}/${PRIVATE_DIR}"/* ; do
+for image in "${CACHE_DIR}/ballys/${PRIVATE_DIR}"/* ; do
     [ -f "$image" ] || continue
     if ! is_png "$image" ; then
         continue
@@ -142,8 +154,8 @@ for image in "${CACHE_DIR}/${PRIVATE_DIR}"/* ; do
     fi
     floor_num=$((10#$floor_num))
     suf=$(ordinal_suffix "$floor_num")
-    DESTFILE="${BASENAME_NORM}_${floor_num}${suf}.png"
-    THUMBFILE="${BASENAME_NORM}_${floor_num}${suf}_thumb.png"
+    DESTFILE="ballys_${floor_num}${suf}.png"
+    THUMBFILE="ballys_${floor_num}${suf}_thumb.png"
     if [ ! -e "${LAYOUTS_DIR}/${DESTFILE}" ] ; then
 	cp "$image" "${LAYOUTS_DIR}/${DESTFILE}"
 	echo "Fetched ${PRIVATE_DIR}/${SRCFILE} as ${DESTFILE}"
@@ -156,3 +168,47 @@ for image in "${CACHE_DIR}/${PRIVATE_DIR}"/* ; do
 	echo "Skipped ${DESTFILE} thumbnail"
     fi
 done
+
+for image in "${CACHE_DIR}/nugget"/* ; do
+    [ -f "$image" ] || continue
+
+    # Check if file is PDF and convert to PNG
+    png_path="${image%.*}.png"
+    if [ ! -e "$png_path" ] && is_pdf "$image" ; then
+        echo "Converting PDF $(basename "$image") to PNG..."
+        pdf_path="$image"
+        png_path="${image%.*}.png"
+        convert -density 300 "$pdf_path" -quality 100 "$png_path" || {
+            echo "Failed to convert $(basename "$image")"
+            continue
+        }
+        image="$png_path"
+    fi
+
+    if ! is_png "$image" ; then
+        continue
+    fi
+    SRCFILE="$(basename "$image")"
+    floor_num=""
+    if [[ "$SRCFILE" =~ ^([0-9]+)[[:space:]]*[Ff][Ll][Oo][Oo][Rr] ]]; then
+        floor_num="${BASH_REMATCH[1]}"
+    else
+        continue
+    fi
+    floor_num=$((10#$floor_num))
+    suf=$(ordinal_suffix "$floor_num")
+    DESTFILE="nugget_${floor_num}${suf}.png"
+    THUMBFILE="nugget_${floor_num}${suf}_thumb.png"
+    if [ ! -e "${LAYOUTS_DIR}/${DESTFILE}" ] ; then
+	cp "$image" "${LAYOUTS_DIR}/${DESTFILE}"
+	echo "Fetched ${PRIVATE_DIR}/${SRCFILE} as ${DESTFILE}"
+    else
+	echo "Skipped ${DESTFILE}"
+    fi
+    if [ ! -e "${LAYOUTS_DIR}/${THUMBFILE}" ] ; then
+	convert "$image" -format png -thumbnail 35x30 "${LAYOUTS_DIR}/${THUMBFILE}"
+	echo "Generated thumbnail ${THUMBFILE}"
+	echo "Skipped ${DESTFILE} thumbnail"
+    fi
+done
+

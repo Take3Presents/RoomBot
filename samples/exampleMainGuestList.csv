@@ -45,14 +45,14 @@ aaa025,Lobster,Rock,rock.lobster@noop.com,04.1 Bally's - Standard 2 Queen,,
 # this room is placed, and will be transferred during incremental
 aaa026,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 # just a buncha people in nugget
-hhh000,Ham,Foo,foo.ham@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
-hhh001,Han,Foo,foo.han@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
-hhh002,Hao,Foo,foo.hao@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
-hhh003,Hap,Foo,foo.hap@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
+hhh000,Ham,Foo,foo.ham@noop.com,15.1 Nugget - Sunset Lakeview 2 Queen,,
+hhh001,Han,Foo,foo.han@noop.com,15.1 Nugget - Sunset Lakeview 2 Queen,,
+hhh002,Hao,Foo,foo.hao@noop.com,15.1 Nugget - Sunset Lakeview 2 Queen,,
+hhh003,Hap,Foo,foo.hap@noop.com,15.1 Nugget - Sunset Lakeview 2 Queen,,
 hhh004,Haq,Foo,foo.haq@noop.com,11.1 Nugget - Sunset King,,
 hhh005,Har,Foo,foo.har@noop.com,11.2 Nugget - Sunset King (DTS),,
-hhh006,Maa,Foo,foo.maa@noop.com,17.1 Nugget - Sunset King,,
-hhh007,Mab,Foo,foo.mab@noop.com,17.1 Nugget - Sunset King,,
+hhh006,Maa,Foo,foo.maa@noop.com,11.1 Nugget - Sunset King,,
+hhh007,Mab,Foo,foo.mab@noop.com,11.1 Nugget - Sunset King,,
 # transferring a nugget room
 hhh008,Has,Foo,foo.has@noop.com,16.1 Nugget - Sunset King Suite,,
 hhh009,Hat,Foo,foo.hat@noop.com,16.1 Nugget - Sunset King Suite,hhh008,
@@ -65,6 +65,7 @@ hhh013,Mat,Foo,foo.mat@noop.com,16.1 Nugget - Sunset King Suite,hhh012,
 # non-placed rooms
 hhh014,Mat,Fon,fon.mat@noop.com,16.1 Nugget - Sunset King Suite,,
 hhh015,Map,Fon,fon.map@noop.com,13.1 Nugget - Sunset Lakeview King,,
+hhh022,Dap,Fon,fon.dap@noop.com,11.1 Nugget - Sunset King,,
 # non-placed transfer which will happen under update
 hhh016,Noo,Foo,foo.noo@noop.com,12.1 Nugget - Sunset Balcony King,,
 # placed transfer which will happen under update
