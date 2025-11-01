@@ -42,6 +42,8 @@ aaa023,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 # these rooms are not placed
 aaa024,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 aaa025,Lobster,Rock,rock.lobster@noop.com,04.1 Bally's - Standard 2 Queen,,
+# this room is placed, and will be transferred during incremental
+aaa026,Lobster,Rock,rock.lobster@noop.com,01.1 Bally's - Standard King,,
 # just a buncha people in nugget
 hhh000,Ham,Foo,foo.ham@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,
 hhh001,Han,Foo,foo.han@noop.com,15.1 Nugget - Sunset Lakeview 2 Queens,,

@@ -64,3 +64,28 @@
     hotel: "Ballys"
     ticket: "SP00004"
 
+- model: "reservations.guest"
+  pk: 7
+  fields:
+    name: "test user4"
+    email: "testuser4@example.com"
+    jwt: "test jwt"
+    can_login: true
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+    room_number: "502"
+    hotel: "Nugget"
+    ticket: "SP00007"
+
+# this room is intentionally missing to simulate bad data
+- model: "reservations.guest"
+  pk: 8
+  fields:
+    name: "test user3"
+    email: "testuser3@example.com"
+    jwt: "test jwt"
+    can_login: true
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+    room_number: "900"
+    hotel: "Nugget"

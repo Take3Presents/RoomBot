@@ -48,7 +48,7 @@
     guest: 4
 
 - model: "reservations.room"
-  pk: 8
+  pk: 4
   fields:
     created_at: "1999-12-31T23:59:59+00:00"
     updated_at: "1999-12-31T23:59:59+00:00"
@@ -64,7 +64,7 @@
     guest: 5
 
 - model: "reservations.room"
-  pk: 4
+  pk: 5
   fields:
     created_at: "1999-12-31T23:59:59+00:00"
     updated_at: "1999-12-31T23:59:59+00:00"
@@ -78,7 +78,7 @@
     placed_by_roombot: true
 
 - model: "reservations.room"
-  pk: 5
+  pk: 6
   fields:
     created_at: "1999-12-31T23:59:59+00:00"
     updated_at: "1999-12-31T23:59:59+00:00"
@@ -92,7 +92,7 @@
     placed_by_roombot: true
 
 - model: "reservations.room"
-  pk: 6
+  pk: 7
   fields:
     created_at: "1999-12-31T23:59:59+00:00"
     updated_at: "1999-12-31T23:59:59+00:00"
@@ -106,7 +106,7 @@
     is_placed: false
 
 - model: "reservations.room"
-  pk: 7
+  pk: 8
   fields:
     created_at: "1999-12-31T23:59:59+00:00"
     updated_at: "1999-12-31T23:59:59+00:00"
@@ -121,3 +121,45 @@
     is_placed: true
     sp_ticket_id: "SP00004"
     guest: 6
+
+- model: "reservations.room"
+  pk: 9
+  fields:
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+    _check_in: "1999-12-31"
+    _check_out: "2000-01-02"
+    number: "502"
+    name_take3: "Sunset King"
+    name_hotel: "Nugget"
+    is_swappable: true
+    sp_ticket_id: "SP00007"
+    primary: "test user4"
+    placed_by_roombot: false
+    guest: 7
+
+- model: "reservations.room"
+  pk: 10
+  fields:
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+    _check_in: "1999-12-31"
+    _check_out: "2000-01-02"
+    number: "506"
+    name_take3: "Queen"
+    name_hotel: "Ballys"
+    is_swappable: true
+    placed_by_roombot: false
+
+- model: "reservations.room"
+  pk: 11
+  fields:
+    created_at: "1999-12-31T23:59:59+00:00"
+    updated_at: "1999-12-31T23:59:59+00:00"
+    _check_in: "1999-12-31"
+    _check_out: "2000-01-02"
+    number: "1000"
+    name_take3: "Queen"
+    name_hotel: "Ballys"
+    is_swappable: true
+    placed_by_roombot: true

@@ -26,3 +26,7 @@ hha009,Baa,Foj,foj.baa@noop.com,02.1 Bally's - Art Room King,aaa005
 # double transfer for existing placed room
 hha011,Lobster,Stone,stone.lobster@noop.com,01.1 Bally's - Standard King,hha010,
 hha010,Lobster,Boulder,boulder.lobster@noop.com,01.1 Bally's - Standard King,aaa023,
+# another transfer of another placed room
+hha012,Lobster,Granite,granite.lobster@noop.com,01.1 Bally's - Standard King,aaa026,
+# buying placed room
+hha013,Lobster,Marble,marble.lobster@noop.com,01.1 Bally's - Standard King,,

@@ -237,7 +237,8 @@ class Room(DirtyFieldsMixin, models.Model):
     @staticmethod
     @transaction.atomic
     def swap(room_one, room_two):
-        if room_two.name_take3 != room_two.name_take3:
+        if room_two.name_take3 != room_one.name_take3 or \
+           room_two.name_hotel != room_one.name_hotel:
             logger.warning("Attempt to swap mismatched room types %s (%s) - %s (%s)",
                            room_one.number, room_one.name_take3,
                            room_two.number, room_two.name_take3)
