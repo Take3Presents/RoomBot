@@ -92,8 +92,7 @@ export default class MyRoomsTable extends React.Component {
 					  STORY_HEADERS.unshift({
 					    prop: "name_hotel",
 					    title: "Hotel",
-					    isSortable: true,
-					    isFilterable: true
+					    isSortable: true
 					  });
 					}
     return STORY_HEADERS;
