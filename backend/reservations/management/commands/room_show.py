@@ -38,7 +38,7 @@ class Command(BaseCommand):
         if room.is_available:
             flags.append('available')
 
-        if room.is_swappable:
+        if room.swappable():
             flags.append('swappable')
 
         if room.is_placed:

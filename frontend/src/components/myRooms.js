@@ -51,6 +51,8 @@ export default class MyRoomsTable extends React.Component {
         this.setState({errorMessage: error.message});
         if (error.response) {
 	  if (error.response.status === 401) {
+	    clearInterval(this.state.refreshTimer);
+	    this.state.refreshTimer = null;
 	    this.setState({error: 'auth'});
 	  } else {
 	    console.log(error.response);
