@@ -30,6 +30,7 @@ Actions:
   backend-restart                Restart the roombaht systemd service
   snapshot                       Create a DB snapshot on the remote host
   snapshot-list                  List available DB snapshots on the remote host
+  snapshot-fetch                 Create and fetch a DB snapshot from the remote host
   wipe                           Wipe the remote ROOMBAHT_DB (interactive confirmation)
   clone_db [options] <source>    Clone a source database into ROOMBAHT_DB (interactive)
                                  Options are forwarded to the remote script. For example:
@@ -152,6 +153,23 @@ elif [ "$ACTION" == "snapshot" ] ; then
 elif [ "$ACTION" == "snapshot-list" ] ; then
     yeet_script
     yeet_ctl "${ACTION} snapshot-list"
+elif [ "$ACTION" == "snapshot-fetch" ] ; then
+    if [ -n "$1" ] ; then
+	CMD="snapshot-fetch $1"
+    else
+	CMD="snapshot-fetch"
+    fi
+    yeet_script
+    # * run command and capture output (hence not using yeet_ctl)
+    # * make sure remote file exists, and fetch
+    # * clean up after ourselves
+    OUTPUT=$(ssh -o 'ControlMaster no' "${SSH_HOST}" "sudo bash -c 'export ENV_FILE=/tmp/${R_SECRET} ; bash /tmp/${R_SCRIPT} ${CMD}'; sudo rm -f /tmp/${R_SCRIPT} /tmp/${R_SECRET}") || true
+    REMOTE_PATH="$(echo "$OUTPUT" | tail -n1 | tr -d '\r')"
+    if [ -z "$REMOTE_PATH" ] ; then
+        problems "remote did not produce snapshot path. Output was: $OUTPUT"
+    fi
+    scp -q "${SSH_HOST}:${REMOTE_PATH}" .
+    ssh -o 'ControlMaster no' "${SSH_HOST}" "sudo rm -f '${REMOTE_PATH}'" >/dev/null 2>&1 || true
 elif [ "$ACTION" == "wipe" ] || [ "$ACTION" == "clone_db" ] ; then
     if [ "$R_ENV" == "prod" ] ; then
         if [ "$ACTION" == "wipe" ] ; then

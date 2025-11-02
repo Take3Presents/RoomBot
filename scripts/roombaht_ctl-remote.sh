@@ -314,6 +314,50 @@ elif [ "$ACTION" == "quick_deploy" ] ; then
     backend_deploy
     backend_config
     frontend_deploy
+elif [ "$ACTION" == "snapshot-fetch" ] ; then
+    DUMP_DB="$ROOMBAHT_DB"
+    if [ -n "$1" ] ; then
+	DUMP_DB="$1"
+    fi
+    db_connection
+    # if we ca
+    OUTFILE="/tmp/${DUMP_DB}-${NOW}.sql.gz"
+
+    # rds version may be different
+    SERVER_VER=$(psql -h "$ROOMBAHT_DB_HOST" -U root -d "$DUMP_DB" -Atc "show server_version;" 2>/dev/null || true)
+    SERVER_MAJOR=$(echo "$SERVER_VER" | cut -d. -f1)
+
+    # if we can, then use local pgsql
+    if command -v pg_dump >/dev/null 2>&1 ; then
+	LOCAL_PG_MAJOR=$(pg_dump --version 2>/dev/null | awk '{print $3}' | cut -d. -f1 || echo "")
+	if [ -n "$LOCAL_PG_MAJOR" ] && [ -n "$SERVER_MAJOR" ] && [ "$LOCAL_PG_MAJOR" -ge "$SERVER_MAJOR" ] ; then
+	    pg_dump -h "$ROOMBAHT_DB_HOST" -U root -d "$DUMP_DB" -Fp | gzip -c > "$OUTFILE"
+	    rc=${PIPESTATUS[0]:-0}
+	    if [ "$rc" -ne 0 ] ; then
+		echo "pg_dump failed with exit $rc"
+		exit "$rc"
+	    fi
+	    chmod 0644 "$OUTFILE"
+	    echo "$OUTFILE"
+	    exit 0
+	fi
+    fi
+    # if local version is insufficient, then use docker
+    if command -v docker >/dev/null 2>&1 && [ -n "$SERVER_MAJOR" ] ; then
+	# Use host networking so the container can reach the RDS endpoint by name/IP
+	docker run --rm --network host -e PGPASSWORD="$PGPASSWORD" "postgres:${SERVER_MAJOR}" \
+	       pg_dump -h "$ROOMBAHT_DB_HOST" -U root -d "$DUMP_DB" -Fp | gzip -c > "$OUTFILE"
+	rc=${PIPESTATUS[0]:-0}
+	if [ "$rc" -eq 0 ] ; then
+	    chmod 0644 "$OUTFILE"
+	    echo "$OUTFILE"
+	    exit 0
+	else
+	    echo "docker pg_dump failed (exit $rc), unable to fetch snapshot"
+	fi
+    fi
+    # welp.
+    problems "unable to fetch snapshot due to rds / local version mismatch"
 else
     echo "invalid args"
 fi

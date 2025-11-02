@@ -4,16 +4,24 @@ set -e
 
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
 ROOTDIR="${SCRIPTDIR%/*}"
-if [ -n "$ROOMBAHT_CONFIG" ] ; then
-    echo "Using alternative config ${ROOMBAHT_CONFIG}"
-    if [ ! -e "$ROOMBAHT_CONFIG" ] ; then
-	echo "Unable to open alternate config, lollll"
-	exit 2
-    fi
-else
-    ROOMBAHT_CONFIG="${ROOTDIR}/dev.env"
-fi
-source "$ROOMBAHT_CONFIG"
 
-"${ROOTDIR}/backend/.venv/bin/python" \
-    "${ROOTDIR}/backend/manage.py" "$@"
+if docker compose ps | grep -q roombot-backend ; then
+    docker compose run \
+	   -v "${ROOTDIR}:${ROOTDIR}" \
+	   --rm \
+	   backend \
+	   uv run /usr/src/app/manage.py "$@"
+else
+    if [ -n "$ROOMBAHT_CONFIG" ] ; then
+	echo "Using alternative config ${ROOMBAHT_CONFIG}"
+	if [ ! -e "$ROOMBAHT_CONFIG" ] ; then
+	    echo "Unable to open alternate config, lollll"
+	    exit 2
+	fi
+    else
+	ROOMBAHT_CONFIG="${ROOTDIR}/dev.env"
+    fi
+    source "$ROOMBAHT_CONFIG"
+    "${ROOTDIR}/backend/.venv/bin/python" \
+	"${ROOTDIR}/backend/manage.py" "$@"
+fi
