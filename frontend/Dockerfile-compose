@@ -1,6 +1,11 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
-ENV REACT_APP_API_ENDPOINT=http://localhost:8080
+# Install curl for healthcheck
+USER root
+RUN apk add --no-cache curl
+
+# Default env; can be overridden by docker-compose.yml
+ENV REACT_APP_API_ENDPOINT=http://backend:8000
 
 RUN mkdir /.npm
 RUN chown node:node /.npm
@@ -11,8 +16,10 @@ RUN chown node:node /app
 USER node
 
 WORKDIR /.npm
-COPY package.json package-lock.json ./
-RUN npm ci
+# Copy only package.json to avoid relying on (or requiring) a host lockfile
+COPY package.json ./
+# Install only runtime deps; do not use or create a lockfile
+RUN npm install --omit=dev --no-audit --no-fund --no-package-lock
 
 WORKDIR /app
 

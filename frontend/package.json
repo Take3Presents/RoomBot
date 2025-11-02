@@ -28,6 +28,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "e2e": "playwright test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -58,6 +59,7 @@
     }
   },
   "devDependencies": {
-    "identity-obj-proxy": "^3.0.0"
+    "identity-obj-proxy": "^3.0.0",
+    "@playwright/test": "^1.44.0"
   }
 }

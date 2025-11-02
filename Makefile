@@ -64,6 +64,7 @@ local_backend_dev: local_backend_env
 local_backend_tests: backend_unit_tests local_tavern_tests
 
 local_tavern_tests: local_backend_env
+	@docker compose down 2>/dev/null || true
 	./scripts/api_test.sh
 
 backend_unit_tests: local_backend_env
@@ -96,4 +97,21 @@ clean: local_backend_clean frontend_clean
 distclean: local_backend_distclean frontend_clean
 
 # testing shortcut
-test: local_backend_tests
+test: local_backend_tests frontend_e2e_tests
+
+frontend_e2e_tests:
+# Build images and start app services in the background
+	docker compose up -d --build db backend frontend
+# Prepare backend database: migrate and load test fixtures
+	@echo "Seeding backend with test fixtures..."
+	docker compose exec -T backend sh -lc "uv run python manage.py migrate --noinput"
+	docker compose exec -T backend sh -lc "uv run python manage.py loaddata test_admin test_users test_rooms"
+# Wait for the frontend to be ready inside the container (no host curl dependency)
+	until docker compose exec -T frontend sh -lc "curl -sf http://localhost:3000/ > /dev/null"; do \
+		echo "Waiting for frontend at http://localhost:3000 ..."; \
+		sleep 2; \
+	done
+# Run the Playwright tests in the test container
+	docker compose run --rm frontend-e2e
+# And clean up
+	docker compose stop

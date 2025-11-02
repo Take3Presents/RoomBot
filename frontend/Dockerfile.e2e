@@ -1,0 +1,12 @@
+# Playwright E2E test image that avoids using the app's package-lock.json
+FROM mcr.microsoft.com/playwright:v1.56.1-jammy
+
+# Copy the frontend source code into the image
+WORKDIR /app
+COPY . .
+
+# Install only the Playwright test runner locally without reading/writing a lockfile
+RUN npm install --no-audit --no-fund --no-package-lock @playwright/test@1.56.1
+
+# Run the tests; the frontend app itself runs in a separate container
+CMD ["npx", "playwright", "test", "--config=/app/playwright.config.ts"]

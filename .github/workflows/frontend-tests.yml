@@ -27,10 +27,59 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Run tests
+      - name: Run unit tests
         working-directory: frontend
         run: CI=false npm test -- --coverage --watchAll=false
 
       - name: Build frontend
         working-directory: frontend
         run: CI=false npm run build
+
+  playwright-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test environment file
+        run: |
+          cat > docker-test.env << EOF
+          POSTGRES_USER=testuser
+          POSTGRES_PASSWORD=testpass
+          POSTGRES_DB=testdb
+          DATABASE_URL=postgresql://testuser:testpass@localhost:5432/testdb
+          EOF
+
+      - name: Start services with docker-compose
+        run: docker compose up -d db backend frontend
+
+      - name: Wait for frontend to be healthy
+        run: |
+          echo "Waiting for frontend to be ready..."
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000/ > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Frontend not ready yet..."
+            sleep 2
+          done
+          echo "Frontend failed to become ready"
+          docker compose logs
+          exit 1
+
+      - name: Run Playwright tests
+        working-directory: frontend
+        run: docker compose run --rm frontend-e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Shutdown services
+        if: always()
+        run: docker compose down -v
