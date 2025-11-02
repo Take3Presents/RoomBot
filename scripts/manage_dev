@@ -5,7 +5,7 @@ set -e
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
 ROOTDIR="${SCRIPTDIR%/*}"
 
-if docker compose ps | grep -q roombot-backend ; then
+if docker compose ps backend ; then
     docker compose run \
 	   -v "${ROOTDIR}:${ROOTDIR}" \
 	   --rm \

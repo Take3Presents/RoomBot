@@ -49,7 +49,7 @@ def create_rooms_main(cmd, args):
 
             rooms_import_list.append(room_data)
         except ValidationError as e:
-            cmd.stderr.write(f"Validation error for row {e}")
+            cmd.stdout.write(cmd.style.ERROR(f"Validation error for row {e}"))
 
     if len(dupe_rooms) > 0:
         raise Exception(f"Duplicate room(s) {','.join(dupe_rooms)} in CSV, refusing to process file")
@@ -75,7 +75,7 @@ def create_rooms_main(cmd, args):
             # * initial roombaht based availability
             room_name = Room.derive_room_name(hotel, elem.room_code)
             if not room_name:
-                cmd.stderr.write(f"Unknown room code {elem.room_code} in {hotel} {elem.room}")
+                cmd.stderr.write(cmd.style.ERROR(f"Unknown room code {elem.room_code} in {hotel} {elem.room}"))
                 continue
 
             room = Room(name_take3=room_name,
@@ -121,10 +121,10 @@ def create_rooms_main(cmd, args):
                 room.is_swappable = False
             else:
                 if elem.ticket_id_in_secret_party == '':
-                    cmd.stderr.write(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable")
+                    cmd.stdout.write(cmd.style.WARNING(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable"))
                     continue
 
-                cmd.stderr.write(f"Roombot-placed Room {room.number} showing as empty in airtable!")
+                cmd.stderr.write(cmd.style.WARNING(f"Roombot-placed Room {room.number} showing as empty in airtable!"))
 
         # the following per-guest stuff gets a bit more complex
         # TODO: Note that as we normalize names via .title() to remove chances of capitalization
@@ -134,7 +134,7 @@ def create_rooms_main(cmd, args):
         if elem.first_name_resident != '':
             primary_name = elem.first_name_resident
             if elem.last_name_resident == '':
-                cmd.stderr.write(f"No last name for room {room.number}")
+                cmd.stdout.write(cmd.style.WARNING(f"No last name for room {room.number}"))
             else:
                 primary_name = f"{primary_name} {elem.last_name_resident}"
 
@@ -144,13 +144,17 @@ def create_rooms_main(cmd, args):
                     if elem.ticket_id_in_secret_party == room.guest.ticket:
                         fuzziness = fuzz.ratio(room.primary, primary_name)
                         if fuzziness >= int(args['fuzziness']):
+                            if args.get('verbosity', 1) <= 2:
+                                cmd.stdout.write(f"Updating primary name for {room.number} transfer {room.guest.transfer}"
+                                                  f" {room.primary}->{primary_name} ({fuzziness}"
+                                                  f" fuzziness within threshold of {args['fuzziness']}")
                             room.primary = primary_name.title()
                         else:
-                            cmd.stderr.write((
+                            cmd.stdout.write(cmd.style.WARNING(
                                 f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
                                 f" {room.primary}->{primary_name} ({fuzziness} fuzziness exceeds threshold of {args['fuzziness']}"))
                     elif trans_guest.name == primary_name.title():
-                            cmd.stderr.write((
+                            cmd.stdout.write(cmd.style.WARNING(
                                 f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
                                 f" {room.primary} -> {primary_name}"))
                     else:
@@ -159,7 +163,7 @@ def create_rooms_main(cmd, args):
                     room.primary = primary_name.title()
 
             if elem.placed_by == '':
-                cmd.stderr.write(f"Room {room.number} Reserved w/o placer")
+                cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} Reserved w/o placer"))
 
             if elem.placed_by != '' and not room.is_placed:
                 room.is_placed = True
@@ -184,13 +188,13 @@ def create_rooms_main(cmd, args):
             else:
                 if room_update and not args['force']:
                     msg = f"Proposed {changes(room)} [y/n/q (to stop process)]"
-                    cmd.stdout.write(msg)
+                    cmd.stdout.write(cmd.style.MIGRATE_LABEL(msg))
                     a_key = getch()
                     if a_key == 'q':
-                        cmd.stderr.write("Giving up on update process")
+                        cmd.stdout.write(cmd.style.ERROR("Giving up on update process"))
                         sys.exit(1)
                     elif a_key != 'y':
-                        cmd.stdout.write(f"Not updating {room.name_hotel} {room.number}")
+                        cmd.stdout.write(cmd.style.WARNING(f"Not updating {room.name_hotel} {room.number}"))
                         continue
 
                 room_msg = f"{'Updated' if room_update else 'Created'} {room.name_take3} room {room.number}"
@@ -237,18 +241,18 @@ def create_rooms_main(cmd, args):
     available_rooms = 0
     swappable_rooms = 0
     for r_counts, counts in rooms.items():
-        cmd.stdout.write((
+        cmd.stdout.write(
             f"room {r_counts} total:{counts['count']}, available:{counts['available']}"
-            f", swappable:{counts['swappable']},"))
+            f", swappable:{counts['swappable']},")
 
         total_rooms += counts['count']
         available_rooms += counts['available']
         swappable_rooms += counts['swappable']
 
     placed_rooms = total_rooms - available_rooms
-    cmd.stdout.write((
+    cmd.stdout.write(
         f"total:{total_rooms}, available:{available_rooms}, placed:{placed_rooms}"
-        f", swappable:{swappable_rooms}"))
+        f", swappable:{swappable_rooms}")
 
 class Command(BaseCommand):
     help='Create/update rooms'
