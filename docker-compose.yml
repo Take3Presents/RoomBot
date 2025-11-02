@@ -6,25 +6,22 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8000:8000
-    volumes:
-      - ./backend:/usr/src/app
     env_file:
       - docker-dev.env
     depends_on:
       - db
-
-  backend-test:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    volumes:
-      - ./backend:/usr/src/app
-    # The backend-test service runs tests inside itself so it
-    # does not need to expose any ports
-    env_file:
-      - docker-test.env
-    depends_on:
-      - db
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /usr/src/app
+          initial_sync: true
+          ignore:
+            - .venv
+            - tavern
+            - scripts
+            - Dockerfile
+            - config
 
   frontend:
     build:

@@ -1,3 +1,4 @@
+import logging
 import sys
 from fuzzywuzzy import fuzz
 from django.core.management.base import BaseCommand, CommandError
@@ -5,9 +6,11 @@ from pydantic import ValidationError
 import reservations.config as roombaht_config
 from reservations.helpers import ingest_csv
 from reservations.models import Room, Guest, Staff
-from reservations.constants import ROOM_LIST
 from reservations.ingest_models import RoomPlacementListIngest
-from reservations.management import getch
+from reservations.management import getch, setup_logging
+
+logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
+logger = logging.getLogger(__file__)
 
 def changes(room):
     msg = f"{room.name_hotel:9}{room.number:4} changes\n"
@@ -18,10 +21,6 @@ def changes(room):
         msg = f"{msg}    {field} {saved} -> {values['current']}\n"
 
     return msg
-
-def debug(cmd, args, msg):
-    if args['debug']:
-        cmd.stderr.write(msg)
 
 def create_rooms_main(cmd, args):
     rooms_file = args['rooms_file']
@@ -58,7 +57,8 @@ def create_rooms_main(cmd, args):
     if len(dupe_tickets) > 0:
         raise Exception(f"Duplicate ticket id(s) {','.join(dupe_tickets)} in CSV, refusing to process file")
 
-    debug(cmd, args, "read in {len(rooms_rows)} rooms for {hotel}")
+    if args.get('verbosity', 1) == 2:
+        cmd.stdout.write("read in {{len(rooms_rows)} rooms for {hotel}")
 
     for elem in rooms_import_list:
         room = None
@@ -102,7 +102,7 @@ def create_rooms_main(cmd, args):
                 if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
                     room.is_swappable = True
 
-        # check-in/check-out are only adjustable via room spreadsheet
+        # check-in/check-out are only adjustable via airtable
         if elem.check_in_date == '' and args['default_check_in']:
             room.check_in = args['default_check_in']
         else:
@@ -114,13 +114,17 @@ def create_rooms_main(cmd, args):
             room.check_out = elem.check_out_date
 
         # Cannot mark a room as non available based on being set to roombaht
-        #   in spreadsheet if it already actually assigned, but you can mark
+        #   in airtable if it already actually assigned, but you can mark
         #   a room as non available/swappable if it is not assigned yet
         if elem.placed_by == '' and not room.is_special and not room.is_available:
             if not room.guest and room.is_swappable:
                 room.is_swappable = False
             else:
-                cmd.stderr.write(f"Not marking assigned room {room.number} as available, despite spreadsheet change")
+                if elem.ticket_id_in_secret_party == '':
+                    cmd.stderr.write(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable")
+                    continue
+
+                cmd.stderr.write(f"Roombot-placed Room {room.number} showing as empty in airtable!")
 
         # the following per-guest stuff gets a bit more complex
         # TODO: Note that as we normalize names via .title() to remove chances of capitalization
@@ -173,7 +177,7 @@ def create_rooms_main(cmd, args):
             and elem.ticket_id_in_secret_party != 'n/a'):
             room.sp_ticket_id = elem.ticket_id_in_secret_party
 
-	# loaded room, check if room_changed
+        # loaded room, check if room_changed
         if room.is_dirty():
             if args['dry_run']:
                 cmd.stdout.write(changes(room))
@@ -226,7 +230,8 @@ def create_rooms_main(cmd, args):
             rooms[room.name_take3] = room_count_obj
 
         else:
-            debug(cmd, args, f"No changes to room {room.number}")
+            if args.get('verbosity', 1) == 2:
+                cmd.stdout.write(f"No changes to room {room.number}")
 
     total_rooms = 0
     available_rooms = 0
@@ -275,12 +280,14 @@ class Command(BaseCommand):
         parser.add_argument('--fuzziness',
                             help='Fuzziness confidence factor for updating name changes (default 95)',
                             default='95')
-        parser.add_argument('--debug',
-                            help='Debug Mode. Much Debug. Wow.',
+        parser.add_argument('--skip-on-mismatch',
+                            help='Skip roombot placed rooms on airtable mismatch',
                             action='store_true',
                             default=False)
 
     def handle(self, *args, **kwargs):
+        self.verbosity = kwargs.get('verbosity', 1)
+        setup_logging(self)
         if kwargs['dry_run'] and not kwargs['preserve']:
             raise CommandError('can only specify --dry-run with --preserve')
 
@@ -293,7 +300,7 @@ class Command(BaseCommand):
                     if getch().lower() != 'y':
                         raise Exception('user said nope')
                 else:
-                    self.stderr.write('Wiping all data at user request!')
+                    logger.info('Wiping all data at user request!')
 
             Room.objects.all().delete()
             Guest.objects.all().delete()

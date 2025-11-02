@@ -117,6 +117,6 @@ while read -r role; do
 done < "$ROLES_TMP"
 
 info "Restoring snapshot into database '$POSTGRES_DB'..."
-eval "$STREAM_CMD" | docker compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1
+eval "$STREAM_CMD" | docker compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 > /dev/null 2>&1
 info "Restore complete 🎺"
 exit 0
