@@ -39,7 +39,7 @@ frontend_archive: frontend_build
 
 
 # targets to support local non-containerized development environments
-frontend_dev: frontend_build
+local_frontend_dev: frontend_build
 	docker run -ti \
 		-p 3000:3000 \
 		-u node \
@@ -77,8 +77,9 @@ local_backend_migrations: local_backend_env
 local_sample_data: local_backend_env
 	./scripts/sample_data.sh
 
-local_backend_clean_data:
-	rm -rf backend/db.sqlite3
+# wipes database, works with both local and docker compose variant
+backend_clean_data:
+	./scripts/manage_dev flush --no-input
 
 # clean up build artifacts and such
 local_backend_distclean: local_backend_clean local_backend_clean_data
@@ -97,3 +98,4 @@ distclean: local_backend_distclean frontend_clean
 
 # testing shortcut
 test: local_backend_tests
+

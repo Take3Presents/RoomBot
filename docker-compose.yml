@@ -1,3 +1,4 @@
+---
 services:
   backend:
     build:
@@ -11,6 +12,7 @@ services:
       - docker-dev.env
     depends_on:
       - db
+
   backend-test:
     build:
       context: ./backend
@@ -23,6 +25,7 @@ services:
       - docker-test.env
     depends_on:
       - db
+
   frontend:
     build:
       context: ./frontend
@@ -34,8 +37,9 @@ services:
     command: /app/scripts/entrypoint-compose.sh
     depends_on:
       - backend
+
   db:
-    image: postgres:16.4-alpine3.20
+    image: postgres:16
     ports:
       - 5432:5432
     volumes:

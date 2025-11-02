@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-PACKAGES=(aptitude nginx screen python3 virtualenv certbot python3-certbot-nginx postgresql-client htop iftop build-essential python3-dev libpq-dev jq postgresql-server-dev-all)
+PACKAGES=(aptitude nginx screen python3 virtualenv certbot python3-certbot-nginx postgresql-client htop iftop build-essential python3-dev libpq-dev jq postgresql-server-dev-all docker.io)
 UV_VERSION="0.9.2"
-UV_CHECKSUM="b775bb84c72210c6c0b9670cfaad0ac2e3953f12a2947d52b57603b4fbae3798"
 
 set -e
 
@@ -87,6 +86,7 @@ python_freshen
 add_user gadget otakup0pe
 add_user index Index01
 add_user cubes cubes
+add_user whiteavian whiteavian
 
 add_user roombaht
 lock_user ubuntu
@@ -94,3 +94,4 @@ lock_user ubuntu
 sudo_user gadget
 sudo_user index
 sudo_user cubes
+sudo_user whiteavian
