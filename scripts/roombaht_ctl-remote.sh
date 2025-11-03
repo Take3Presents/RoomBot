@@ -269,7 +269,7 @@ elif [ "$ACTION" == "load_rooms" ] ; then
     db_connection
     "/opt/roombaht-backend/.venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" \
-	create_rooms "$ROOM_FILE" --hotel "$HOTEL" --preserve
+	create_rooms "$ROOM_FILE" --hotel "$HOTEL" --preserve --skip-on-mismatch
 elif [ "$ACTION" == "clone_db" ] ; then
     SOURCE_DB="roombaht"
     while getopts "d:" arg; do
