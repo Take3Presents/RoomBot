@@ -10,7 +10,7 @@ from reservations.ingest_models import RoomPlacementListIngest
 from reservations.management import getch, setup_logging
 
 logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
-logger = logging.getLogger(__file__)
+logger = logging.getLogger('create_rooms')
 
 def changes(room):
     msg = f"{room.name_hotel:9}{room.number:4} changes\n"
@@ -75,7 +75,7 @@ def create_rooms_main(cmd, args):
             # * initial roombaht based availability
             room_name = Room.derive_room_name(hotel, elem.room_code)
             if not room_name:
-                cmd.stderr.write(cmd.style.ERROR(f"Unknown room code {elem.room_code} in {hotel} {elem.room}"))
+                cmd.stdout.write(cmd.style.ERROR(f"Unknown room code {elem.room_code} in {hotel} {elem.room}"))
                 continue
 
             room = Room(name_take3=room_name,
@@ -121,10 +121,10 @@ def create_rooms_main(cmd, args):
                 room.is_swappable = False
             else:
                 if elem.ticket_id_in_secret_party == '':
-                    cmd.stdout.write(cmd.style.WARNING(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable"))
+                    logger.debug("Skipping roombot-placed room %s, as it is marked as available in airtable", room.number)
                     continue
 
-                cmd.stderr.write(cmd.style.WARNING(f"Roombot-placed Room {room.number} showing as empty in airtable!"))
+                cmd.stdout.write(cmd.style.WARNING(f"Roombot-placed Room {room.number} showing as empty in airtable!"))
 
         # the following per-guest stuff gets a bit more complex
         # TODO: Note that as we normalize names via .title() to remove chances of capitalization
@@ -144,7 +144,7 @@ def create_rooms_main(cmd, args):
                     if elem.ticket_id_in_secret_party == room.guest.ticket:
                         fuzziness = fuzz.ratio(room.primary, primary_name)
                         if fuzziness >= int(args['fuzziness']):
-                            if args.get('verbosity', 1) <= 2:
+                            if args.get('verbosity', 1) >= 2:
                                 cmd.stdout.write(f"Updating primary name for {room.number} transfer {room.guest.transfer}"
                                                   f" {room.primary}->{primary_name} ({fuzziness}"
                                                   f" fuzziness within threshold of {args['fuzziness']}")
@@ -234,7 +234,7 @@ def create_rooms_main(cmd, args):
             rooms[room.name_take3] = room_count_obj
 
         else:
-            if args.get('verbosity', 1) == 2:
+            if args.get('verbosity', 1) >= 2:
                 cmd.stdout.write(f"No changes to room {room.number}")
 
     total_rooms = 0
