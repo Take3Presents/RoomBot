@@ -18,7 +18,7 @@ def onboarding_email(email, otp):
         'hostname': my_url(),
         'email': email,
         'otp': otp,
-        'deadline': 'Saturday, November 9th, 2024 at 5pm PST'
+        'deadline': 'Thursday, November 6th, 2025 at 10pm PST'
     }
     body_text = template.render(objz)
     send_email([email],
