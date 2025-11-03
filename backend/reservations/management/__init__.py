@@ -1,3 +1,4 @@
+import logging
 import termios
 import tty
 import sys
@@ -18,3 +19,21 @@ def getch():
         return ch
     return _getch()
 
+
+def setup_logging(cmd):
+    logger = logging.getLogger()
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    # Set log level based on verbosity
+    if cmd.verbosity == 0:
+        logger.setLevel(logging.WARNING)
+    elif cmd.verbosity == 1:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.DEBUG)

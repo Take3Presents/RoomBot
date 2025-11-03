@@ -238,12 +238,29 @@ This command will fully wipe (via drop / create) the database for the specified 
 $ ./scripts/roombaht_ctl <user> <env> wipe
 ```
 
-### Snapshot
+### Snapshots
 
 This command will create a new database using the specified environment as a template. The naming format will be `<ROOMBAHT_DB>-MMDDYYYY-HHMM`.
 
 ```sh
-./scripts/roombaht_ctl <user> <env> snapshot
+$./scripts/roombaht_ctl <user> <env> snapshot
+```
+
+You can list visible (per-environment) snapshots.
+```sh
+$ ./scripts/roombaht_ctl <user> <env> snapshot-list
+```
+
+You can also fetch snapshots to your local workstation, to be loaded into the docker-compose environment. The snapshot will be located in your current working directory suffixed with current timestamp.
+
+```sh
+$ ./scripts/roombaht_ctl <user> <env> snapshot-fetch
+$ ./scripts/restore_snapshot.sh roombaht_<env>_<timestamp>.sql.gz
+```
+
+The default for `snapshot-fetch` is to use the current "live" database for the given environment. You may also specify a specific snapshot.
+```sh
+$ ./scripts/roombaht_ctl <user> <env> snapshot-fetch roombaht_env-01011969-0420
 ```
 
 ### Clone

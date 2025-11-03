@@ -58,7 +58,7 @@ wait_for_db_accepting_connections() {
             fi
         elif [ "$allow" = "f" ]; then
             echo "Database '$db' exists but disallows connections; attempting to enable..."
-            run_psql postgres "ALTER DATABASE \"${db}\" WITH ALLOW_CONNECTIONS = true;" || true
+            run_psql postgres "ALTER DATABASE \"${db}\" WITH ALLOW_CONNECTIONS = true;" || problems "Unable to enable connections"
         else
             if docker compose exec -T db psql -U "$POSTGRES_USER" -d "$db" -c '\q' >/dev/null 2>&1; then
                 return 0
@@ -82,11 +82,11 @@ run_psql() {
 # * kick connections and block for now
 # * drop and re-create the database
 info "Dropping and recreating database '$POSTGRES_DB' (connecting to 'postgres' for maintenance)..."
-run_psql postgres "REVOKE CONNECT ON DATABASE \"$POSTGRES_DB\" FROM public;" >/dev/null 2>&1 || true
-run_psql postgres "ALTER DATABASE \"$POSTGRES_DB\" CONNECTION LIMIT 0;" >/dev/null 2>&1 || true
-run_psql postgres "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$(echo "$POSTGRES_DB" | sed "s/'/''/g")' AND pid <> pg_backend_pid();" >/dev/null 2>&1 || true
-run_psql postgres "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";" >/dev/null 2>&1 || true
-run_psql postgres "CREATE DATABASE \"$POSTGRES_DB\";" >/dev/null 2>&1 || true
+run_psql postgres "REVOKE CONNECT ON DATABASE \"$POSTGRES_DB\" FROM public;" >/dev/null 2>&1 || problems "Unable to bloc connections"
+run_psql postgres "ALTER DATABASE \"$POSTGRES_DB\" CONNECTION LIMIT 0;" >/dev/null 2>&1 || problems "Unable to update connection limit"
+run_psql postgres "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$(echo "$POSTGRES_DB" | sed "s/'/''/g")' AND pid <> pg_backend_pid();" >/dev/null 2>&1 || problems "Unable to terminate connections"
+run_psql postgres "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";" >/dev/null 2>&1 || problems "Unable to drop database"
+run_psql postgres "CREATE DATABASE \"$POSTGRES_DB\";" >/dev/null 2>&1 || problems "Uanble to create database"
 wait_for_db_accepting_connections "$POSTGRES_DB"
 
 # "translate" any roles set in RDS to be usable locally
@@ -113,10 +113,10 @@ while read -r role; do
     fi
     info "Ensuring role '$role' exists..."
     # Create role if missing; use a DO block to avoid errors if it already exists.
-    run_psql postgres "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$role') THEN CREATE ROLE \"$role\" LOGIN; END IF; END \$\$;" >/dev/null 2>&1 || true
+    run_psql postgres "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$role') THEN CREATE ROLE \"$role\" LOGIN; END IF; END \$\$;" >/dev/null 2>&1 || problems "Unable to update roles"
 done < "$ROLES_TMP"
 
 info "Restoring snapshot into database '$POSTGRES_DB'..."
-eval "$STREAM_CMD" | docker compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1
+eval "$STREAM_CMD" | docker compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 > /dev/null 2>&1
 info "Restore complete 🎺"
 exit 0

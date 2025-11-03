@@ -13,19 +13,6 @@ services:
     depends_on:
       - db
 
-  backend-test:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    volumes:
-      - ./backend:/usr/src/app
-    # The backend-test service runs tests inside itself so it
-    # does not need to expose any ports
-    env_file:
-      - docker-test.env
-    depends_on:
-      - db
-
   frontend:
     build:
       context: ./frontend
