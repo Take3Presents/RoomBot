@@ -5,7 +5,7 @@ set -e
 SCRIPTDIR=$( cd "${0%/*}" && pwd)
 ROOTDIR="${SCRIPTDIR%/*}"
 
-if docker compose ps backend ; then
+if docker compose ps | grep -q backend ; then
     docker compose run \
 	   -v "${ROOTDIR}:${ROOTDIR}" \
 	   --rm \
@@ -22,6 +22,8 @@ else
 	ROOMBAHT_CONFIG="${ROOTDIR}/dev.env"
     fi
     source "$ROOMBAHT_CONFIG"
-    "${ROOTDIR}/backend/.venv/bin/python" \
-	"${ROOTDIR}/backend/manage.py" "$@"
+    uv run \
+       --python "$(cat "${ROOTDIR}/.python-version")" \
+       --project "${ROOTDIR}/backend/pyproject.toml" \
+       "${ROOTDIR}/backend/manage.py" "$@"
 fi
