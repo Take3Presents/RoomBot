@@ -12,6 +12,9 @@ cleanup() {
     if [ -z "${SUCCESS:-}" ] && [ -e "$LOG" ] ; then
         cat "$LOG"
     fi
+    if [ -n "${REPORTS_DIR:-}" ] && [ -d "${REPORTS_DIR:-}" ] ; then
+	rm -rf "$REPORTS_DIR"
+    fi
     "${SCRIPTDIR}/test_infra.sh" report
 }
 
@@ -81,6 +84,7 @@ run() {
            --default-check-in "1999/1/1" --default-check-out "1999/1/10"
 
     "$TAVERN" backend/tavern/test_guests.tavern.yml
+    manage generate_reports -o "$REPORTS_DIR"
     manage room_list >> "$LOG" 2>&1
     manage room_list -t Queen >> "$LOG" 2>&1
     manage room_show --hotel ballys 400 >> "$LOG" 2>&1
@@ -100,4 +104,6 @@ export ROOMBAHT_CONFIG="${ROOTDIR}/test.env"
 
 trap cleanup EXIT
 init
+REPORTS_DIR="/tmp/test-reports-${RANDOM}"
+mkdir -p "$REPORTS_DIR"
 run
