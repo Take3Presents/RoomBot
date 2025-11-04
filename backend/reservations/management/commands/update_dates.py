@@ -44,10 +44,20 @@ class Command(BaseCommand):
     help = 'Update check-in/check-out dates for rooms placed_by_roombot with both dates missing'
 
     def add_arguments(self, parser):
-        parser.add_argument('--default-check-in', help='Default check in date (parseable by helpers.real_date)')
-        parser.add_argument('--default-check-out', help='Default check out date (parseable by helpers.real_date)')
-        parser.add_argument('-d', '--dry-run', help='Do not actually make changes', action='store_true', default=False)
-        parser.add_argument('--skip-on-parse-error', help='Skip rooms when date parsing fails instead of aborting', action='store_true', default=False)
+        parser.add_argument('--default-check-in',
+                            help='Default check in date (parseable by helpers.real_date)',
+                            default=roombaht_config.DEFAULT_CHECK_IN)
+        parser.add_argument('--default-check-out',
+                            help='Default check out date (parseable by helpers.real_date)',
+                            default=roombaht_config.DEFAULT_CHECK_OUT)
+        parser.add_argument('-d', '--dry-run',
+                            help='Do not actually make changes',
+                            action='store_true',
+                            default=False)
+        parser.add_argument('--skip-on-parse-error',
+                            help='Skip rooms when date parsing fails instead of aborting',
+                            action='store_true',
+                            default=False)
 
     def handle(self, *args, **options):
         self.verbosity = options.get('verbosity', 1)

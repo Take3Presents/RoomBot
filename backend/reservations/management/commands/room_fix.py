@@ -1,0 +1,141 @@
+from django.core.management.base import BaseCommand, CommandError
+from fuzzywuzzy import fuzz
+from reservations.models import Room, Guest
+from reservations.checks import room_guest_name_mismatch
+from reservations.management import getch
+import reservations.config as roombaht_config
+
+class Command(BaseCommand):
+    help = "Fixes corrupted room records and associations"
+    def add_arguments(self, parser):
+        parser.add_argument('number',
+                            help='The room number')
+        parser.add_argument('--hotel-name',
+                            default='Ballys',
+                            help='The hotel name. Defaults to Ballys.')
+        parser.add_argument('--fuzziness',
+                            help=f"Fuzziness confidence factor for updating name changes (default {roombaht_config.NAME_FUZZ_FACTOR})",
+                            default=roombaht_config.NAME_FUZZ_FACTOR,
+                            type=int)
+
+    def handle(self, *args, **kwargs):
+        if 'number' not in kwargs:
+            raise CommandError("Must specify room number")
+
+        room = None
+        hotel = kwargs['hotel_name'].title()
+        if hotel not in roombaht_config.GUEST_HOTELS:
+            raise CommandError(f"Invalid hotel {kwargs['hotel_name']} specified")
+
+        try:
+            room = Room.objects.get(number=kwargs['number'], name_hotel=hotel)
+        except Room.DoesNotExist as exp:
+            raise CommandError(f"Room {kwargs['number']} not found in {kwargs['hotel_name']}") from exp
+
+        if room_guest_name_mismatch(room):
+            self.stdout.write(f"Guest {room.guest.name} not found in room occupants")
+
+            occupants = room.occupants()
+            matched_any = False
+
+            max_fuzz = 0
+            # First try to fuzz match as before
+            for name in occupants:
+                fuzziness = fuzz.ratio(room.guest.name, name)
+                if fuzziness >= kwargs['fuzziness']:
+                    matched_any = True
+                    guest_entries = Guest.objects.filter(email=room.guest.email)
+                    self.stdout.write(self.style.SUCCESS(f"Updating guest {guest_entries.count()} record(s) with {fuzziness} fuzzy match {name}"))
+                    for guest in guest_entries:
+                        guest.name = name
+                        guest.save()
+
+                if fuzziness > max_fuzz:
+                    max_fuzz = fuzziness
+
+            if matched_any:
+                return
+
+            # No fuzzy matches: present a numbered list and a quit option
+            self.stdout.write(f"No fuzzy matches found (max {max_fuzz}. Please select the correct occupant to associate with this room:")
+            for idx, name in enumerate(occupants, start=1):
+                self.stdout.write(f"{idx}. {name}")
+            self.stdout.write("q. Quit")
+
+            self.stdout.write("Select occupant number or 'q' to quit")
+            choice = getch()
+            if choice.lower() == 'q':
+                self.stdout.write("Aborting room fix")
+                return
+
+            try:
+                sel_idx = int(choice) - 1
+                if sel_idx < 0 or sel_idx >= len(occupants):
+                    raise ValueError()
+            except ValueError:
+                raise CommandError("Invalid selection")
+
+            selected_name = occupants[sel_idx]
+
+            # Attempt to find an existing guest record per rules
+            og_guest = room.guest
+            guest = None
+
+            if room.sp_ticket_id:
+                candidates = Guest.objects.filter(ticket=room.sp_ticket_id)
+            else:
+                candidates = Guest.objects.filter(name__iexact=selected_name)
+
+            # prefer candidates in this order
+            # * if the sp ticket id matches
+            # * if there is no ticket, room number, or hotel
+            preferred = None
+            for c in candidates:
+                if room.sp_ticket_id and c.ticket == room.sp_ticket_id:
+                    preferred = c
+                    break
+                elif not c.ticket or not c.room_number or not c.hotel:
+                    preferred = c
+                    break
+
+            if preferred:
+                guest = preferred
+                guest.name = selected_name
+                guest.room_number = room.number
+                guest.hotel = room.name_hotel
+                if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
+                    guest.can_login = True
+
+                guest.save()
+                self.stdout.write(self.style.SUCCESS(f"Associated existing guest {guest.email or '[no email]'} ({guest.name}) with room {room.number}"))
+            else:
+                # Create a new guest record if we couldn't find a suitable candidate
+                email = og_guest.email if og_guest and hasattr(og_guest, 'email') else ''
+                ticket = room.sp_ticket_id or ''
+                guest = Guest(name=selected_name,
+                              email=email,
+                              ticket=ticket,
+                              jwt=candidates[0].jwt,
+                              room_number=room.number,
+                              hotel=room.name_hotel)
+                if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
+                    guest.can_login = True
+                guest.save()
+                self.stdout.write(self.style.SUCCESS(f"Created new guest {guest.email or '[no email]'} ({guest.name}) and associated with room {room.number}"))
+
+            # If there was an original guest, disassociate if different
+            if og_guest and og_guest != guest:
+                og_guest.room_number = None
+                og_guest.hotel = None
+                og_guest.save()
+
+            # Update room and sp_ticket_id as needed
+            if not room.sp_ticket_id:
+                room.sp_ticket_id = guest.ticket
+            elif room.sp_ticket_id != guest.ticket:
+                room.sp_ticket_id = guest.ticket
+
+            room.guest = guest
+            room.is_available = False
+            room.primary = guest.name
+            room.save()

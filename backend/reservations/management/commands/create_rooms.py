@@ -1,7 +1,9 @@
 import logging
+import re
 import sys
 from fuzzywuzzy import fuzz
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from pydantic import ValidationError
 import reservations.config as roombaht_config
 from reservations.helpers import ingest_csv
@@ -12,9 +14,22 @@ from reservations.management import getch, setup_logging
 logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 logger = logging.getLogger('create_rooms')
 
-def changes(room):
+def debug(msg, args):
+    if args.get('verbosity', 1) >= 2:
+        cmd.stdout.write(msg)
+
+def guest_changes(guest):
+    dirty_fields = guest.get_dirty_fields(verbose=True)
+    msg = f"{guest.email} {'changes' if len(dirty_fields) > 0 else 'changed'}\n"
+    for field, values in dirty_fields.items():
+        saved = values['saved']
+        msg = f"{msg}    {field} {saved} -> {values['current']}\n"
+
+    return msg
+
+def room_changes(room):
     msg = f"{room.name_hotel:9}{room.number:4} changes\n"
-    for field, values in room.get_dirty_fields(verbose=True).items():
+    for field, values in room.get_dirty_fields(verbose=True, check_relationship=True).items():
         saved = values['saved']
         if room.guest and field == 'primary':
             saved = f"{saved} (owner {room.guest.name})"
@@ -37,6 +52,7 @@ def create_rooms_main(cmd, args):
     rooms_import_list = []
     dupe_rooms = []
     dupe_tickets = []
+    sp_ticket_pattern = re.compile(r'^[A-Z0-9]{6}$')
     for r in rooms_rows:
         try:
             room_data = RoomPlacementListIngest(**r)
@@ -57,10 +73,13 @@ def create_rooms_main(cmd, args):
     if len(dupe_tickets) > 0:
         raise Exception(f"Duplicate ticket id(s) {','.join(dupe_tickets)} in CSV, refusing to process file")
 
-    if args.get('verbosity', 1) == 2:
-        cmd.stdout.write("read in {{len(rooms_rows)} rooms for {hotel}")
+    debug(f"read in {len(rooms_rows)} rooms for {hotel}", args)
 
+    processed_rooms = []
     for elem in rooms_import_list:
+        if len(args['only_room']) > 0 and str(elem.room) not in args['only_room']:
+            continue
+
         room = None
         room_update = False
         try:
@@ -72,7 +91,6 @@ def create_rooms_main(cmd, args):
             # * room number
             # * hotel
             # * room type
-            # * initial roombaht based availability
             room_name = Room.derive_room_name(hotel, elem.room_code)
             if not room_name:
                 cmd.stdout.write(cmd.style.ERROR(f"Unknown room code {elem.room_code} in {hotel} {elem.room}"))
@@ -96,11 +114,18 @@ def create_rooms_main(cmd, args):
             if 'mountainview' in features or 'mountain view' in features:
                 room.is_mountainview = True
 
-            if elem.placed_by_roombaht:
-                room.placed_by_roombot = True
-                room.is_available = True
-                if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
-                    room.is_swappable = True
+        if elem.placed_by_roombaht and not room.placed_by_roombot:
+            room.placed_by_roombot = True
+            room.is_placed = False
+            room.is_available = True
+
+            if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
+                room.is_swappable = True
+
+        elif not elem.placed_by_roombaht and room.placed_by_roombot:
+            room.placed_by_roombot = False
+            room.is_available = False
+            room.is_swappable = False
 
         # check-in/check-out are only adjustable via airtable
         if elem.check_in_date == '' and args['default_check_in']:
@@ -121,7 +146,7 @@ def create_rooms_main(cmd, args):
                 room.is_swappable = False
             else:
                 if elem.ticket_id_in_secret_party == '':
-                    logger.debug("Skipping roombot-placed room %s, as it is marked as available in airtable", room.number)
+                    debug(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable", args)
                     continue
 
                 cmd.stdout.write(cmd.style.WARNING(f"Roombot-placed Room {room.number} showing as empty in airtable!"))
@@ -139,28 +164,35 @@ def create_rooms_main(cmd, args):
                 primary_name = f"{primary_name} {elem.last_name_resident}"
 
             if room.primary != primary_name.title():
+                fuzziness = fuzz.ratio(room.primary, primary_name)
                 if room.guest and room.guest.transfer:
                     trans_guest = room.guest.chain(room.guest.transfer)[-1]
                     if elem.ticket_id_in_secret_party == room.guest.ticket:
-                        fuzziness = fuzz.ratio(room.primary, primary_name)
-                        if fuzziness >= int(args['fuzziness']):
-                            if args.get('verbosity', 1) >= 2:
-                                cmd.stdout.write(f"Updating primary name for {room.number} transfer {room.guest.transfer}"
-                                                  f" {room.primary}->{primary_name} ({fuzziness}"
-                                                  f" fuzziness within threshold of {args['fuzziness']}")
-                            room.primary = primary_name.title()
+                        if fuzziness >= args['fuzziness']:
+                            debug(cmd.style.SUCCESS(f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
+                                                    f" {room.primary} -> {primary_name}"), args)
                         else:
-                            cmd.stdout.write(cmd.style.WARNING(
-                                f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
-                                f" {room.primary}->{primary_name} ({fuzziness} fuzziness exceeds threshold of {args['fuzziness']}"))
+                            room.primary = primary_name.title()
+
                     elif trans_guest.name == primary_name.title():
                             cmd.stdout.write(cmd.style.WARNING(
                                 f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
                                 f" {room.primary} -> {primary_name}"))
                     else:
-                        room.primary = primary_name.title()
+                        if fuzziness <= args['fuzziness']:
+                            room.primary = primary_name.title()
+                        else:
+                            debug(cmd.style.SUCCESS(f"Not updating primary name for {room.number}"
+                                                    f"{room.primary}->{primary_name} ({fuzziness}"
+                                                    f" fuzziness within threshold of {args['fuzziness']}"), args)
                 else:
-                    room.primary = primary_name.title()
+                    if fuzziness <= args['fuzziness']:
+                        room.primary = primary_name.title()
+                    else:
+                        cmd.stdout.write(cmd.style.SUCCESS(f"Not updating primary name for {room.number}"
+                                                           f" {room.primary}->{primary_name} ({fuzziness}"
+                                                           f" fuzziness within threshold of {args['fuzziness']}"))
+
 
             if elem.placed_by == '':
                 cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} Reserved w/o placer"))
@@ -177,17 +209,98 @@ def create_rooms_main(cmd, args):
         if elem.secondary_name != room.secondary:
             room.secondary = elem.secondary_name.title()
 
-        if (elem.ticket_id_in_secret_party != room.sp_ticket_id
-            and elem.ticket_id_in_secret_party != 'n/a'):
-            room.sp_ticket_id = elem.ticket_id_in_secret_party
+        old_guest = None
+        old_room = None
+        if elem.ticket_id_in_secret_party != room.sp_ticket_id:
+            if elem.ticket_id_in_secret_party and \
+               not bool(sp_ticket_pattern.fullmatch(elem.ticket_id_in_secret_party)):
+                cmd.stdout.write(cmd.style.ERROR(f"Skipping room {room.number} with invalid sp_ticket_id in airtable {elem.ticket_id_in_secret_party}"))
+                continue
 
-        # loaded room, check if room_changed
-        if room.is_dirty():
+            # * we will not do anything if the existing guest has already logged in
+            # * we clean up the guest association for the old guest, to allow them to be
+            #   and expect it will get cleaned up by the next secret party import or
+            #   by placement manually fraking with airtable
+            # * if the new guest has a record with the sp_ticket_id then....
+            #   * if they have an existing room already assigned, and the room has not been
+            #     modified this round, we attempt to free the old room as a roombaht
+            #     allocated room. if it has been modified, a warning is thrown, and system
+            #     checks will probably light up, and this is why room_fix command is a thing
+            #   * associate the new guest record with the current room
+            if room.guest:
+                if room.guest.last_login:
+                    cmd.stdout.write(cmd.style.ERROR(f"Not marking occupied {room.name_hotel} {room.number} room as non placed; user has already logged in!"))
+                    continue
+
+                room.guest.room_number = None
+                room.guest.hotel = None
+                old_guest = room.guest
+                if elem.ticket_id_in_secret_party:
+                    try:
+                        new_guest = Guest.objects.get(ticket=elem.ticket_id_in_secret_party)
+                        new_guest.room_number = room.number
+                        new_guest.hotel = room.name_hotel
+                        room.guest = new_guest
+                        try:
+                            old_room = Room.objects.get(sp_ticket_id=elem.ticket_id_in_secret_party)
+                            if old_room.number in processed_rooms:
+                                cmd.stdout.write(cmd.style.WARNING(f"Not able to update {new_guest.name}'s old room {old_room.number}. Please run system checks to identify potential side effects"))
+
+                            old_room.guest = None
+                            old_room.primary = ""
+                            old_room.secondary = ""
+                            old_room.placed_by = ""
+                            old_room.swap_code = None
+                            old_room.placed_by_roombaht = True
+                            old_room.is_available = True
+                            old_room.is_swappable = True
+                            old_room.is_placed = False
+                            old_room.sp_ticket_id = None
+                        except Room.DoesNotExist:
+                            # this is fine, right?
+                            pass
+
+                    except Guest.DoesNotExist:
+                        room.guest = None
+                else:
+                    room.guest = None
+                    room.primary = ''
+                    room.secondary = ''
+                    room.placed_by = ''
+                    room.swap_code = None
+                    room.placed_by_roombaht = True
+                    room.is_available = True
+                    room.is_swappable = True
+                    room.is_placed = False
+
+                room.sp_ticket_id = elem.ticket_id_in_secret_party
+
+        # loaded room, check if room (and associated guest records) changed
+        if room.is_dirty(check_relationship=True):
             if args['dry_run']:
-                cmd.stdout.write(changes(room))
+                if old_guest and old_guest.is_dirty():
+                    cmd.stdout.write(cmd.style.MIGRATE_LABEL(f"Old Guest\n{guest_changes(old_guest)}\n"))
+
+                if room.guest and room.guest.is_dirty():
+                    cmd.stdout.write(cmd.style.MIGRATE_LABEL(f"New Guest\n{guest_changes(room.guest)}\n"))
+
+                if old_room and old_room.is_dirty(check_relationship=True):
+                    cmd.stdout.write(cmd.style.MIGRATE_LABEL(f"Old Room\n{room_changes(room)}\n"))
+
+                cmd.stdout.write(cmd.style.MIGRATE_LABEL(room_changes(room)))
             else:
                 if room_update and not args['force']:
-                    msg = f"Proposed {changes(room)} [y/n/q (to stop process)]"
+                    msg = "Proposed Changes\n"
+                    if old_guest and old_guest.is_dirty():
+                        msg += f"Old Guest\n{guest_changes(old_guest)}\n"
+
+                    if room.guest and room.guest.is_dirty():
+                        msg += f"New Guest\n{guest_changes(room.guest)}\n"
+
+                    if old_room and old_room.is_dirty(check_relationship=True):
+                        msg += f"Old Room\n{room_changes(old_room)}\n"
+
+                    msg += f"{room_changes(room)} [y/n/q (to stop process)]"
                     cmd.stdout.write(cmd.style.MIGRATE_LABEL(msg))
                     a_key = getch()
                     if a_key == 'q':
@@ -197,21 +310,43 @@ def create_rooms_main(cmd, args):
                         cmd.stdout.write(cmd.style.WARNING(f"Not updating {room.name_hotel} {room.number}"))
                         continue
 
-                room_msg = f"{'Updated' if room_update else 'Created'} {room.name_take3} room {room.number}"
-                if room.is_swappable:
-                    room_msg += ', swappable'
+                if args['force'] and room_update:
+                    room_msg = f"{'Updated' if room_update else 'Created'} {room_changes(room)}"
+                else:
+                    room_msg = f"{'Updated' if room_update else 'Created'} {room.name_take3} room {room.number}"
 
-                if room.is_available:
-                    room_msg += ', available'
+                    if room.is_swappable:
+                        room_msg += ', swappable'
 
-                if room.is_placed:
-                    room_msg += f", placed ({primary_name})"
+                    if room.is_available:
+                        room_msg += ', available'
 
-                if room.is_special:
-                    room_msg += ", special!"
+                    if room.is_placed:
+                        room_msg += f", placed ({primary_name})"
 
-                room.save_dirty_fields()
-                cmd.stdout.write(room_msg)
+                    if room.is_special:
+                        room_msg += ", special!"
+
+                # Wrap all related database writes for this room in a single transaction
+                # so either all related changes commit or none do.
+                try:
+                    with transaction.atomic():
+                        if old_guest and old_guest.is_dirty():
+                            old_guest.save_dirty_fields()
+
+                        if old_room and old_room.is_dirty(check_relationship=True):
+                            old_room.save_dirty_fields()
+
+                        if room.guest and room.guest.is_dirty():
+                            room.guest.save_dirty_fields()
+
+                        room.save_dirty_fields()
+                except Exception as e:
+                    # Surface the error to the user and skip further processing of this room
+                    cmd.stdout.write(cmd.style.ERROR(f"Failed to save changes for room {room.number}: {e}"))
+                    continue
+
+                cmd.stdout.write(cmd.style.SUCCESS(room_msg))
 
             # build up some ingestion metrics
             room_count_obj = None
@@ -233,9 +368,11 @@ def create_rooms_main(cmd, args):
 
             rooms[room.name_take3] = room_count_obj
 
+            processed_rooms.append(room.number)
+
         else:
-            if args.get('verbosity', 1) >= 2:
-                cmd.stdout.write(f"No changes to room {room.number}")
+            debug(f"No changes to room {room.number}", args)
+
 
     total_rooms = 0
     available_rooms = 0
@@ -260,7 +397,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('rooms_file',
                             help='Path to Rooms CSV file')
-        parser.add_argument('--force',
+        parser.add_argument('--force', '-f',
                             dest='force',
                             help='Force overwriting/updating',
                             action='store_true',
@@ -268,26 +405,35 @@ class Command(BaseCommand):
         parser.add_argument('--hotel-name',
                             default="ballys",
                             help='Specify hotel name (ballys, nugget)')
-        parser.add_argument('--preserve',
+        parser.add_argument('--preserve', '-p',
                             dest='preserve',
                             action='store_true',
                             default=False,
                             help='Preserve data, updating rooms in place')
         parser.add_argument('--default-check-in',
-                            help='Default check in date MM/DD')
+                            help='Default check in date MM/DD',
+                            default=roombaht_config.DEFAULT_CHECK_IN)
         parser.add_argument('--default-check-out',
-                            help='Default check out date MM/DD')
+                            help='Default check out date MM/DD',
+                            default=roombaht_config.DEFAULT_CHECK_OUT)
         parser.add_argument('-d', '--dry-run',
                             help='Do not actually make changes',
                             action='store_true',
                             default=False)
         parser.add_argument('--fuzziness',
-                            help='Fuzziness confidence factor for updating name changes (default 95)',
-                            default='95')
+                            help=f"Fuzziness confidence factor for updating name changes (default {roombaht_config.NAME_FUZZ_FACTOR})",
+                            default=roombaht_config.NAME_FUZZ_FACTOR,
+                            type=int)
         parser.add_argument('--skip-on-mismatch',
                             help='Skip roombot placed rooms on airtable mismatch',
                             action='store_true',
                             default=False)
+        parser.add_argument('--only-room', '-o',
+                            help='Only process specified rooms, may be used more than once',
+                            type=str,
+                            nargs='+',
+                            default=[],
+                            metavar='room')
 
     def handle(self, *args, **kwargs):
         self.verbosity = kwargs.get('verbosity', 1)
@@ -306,19 +452,15 @@ class Command(BaseCommand):
                 else:
                     logger.info('Wiping all data at user request!')
 
-            Room.objects.all().delete()
-            Guest.objects.all().delete()
+            # Wrap deletes in a transaction to ensure the wipe is atomic.
+            try:
+                with transaction.atomic():
+                    Room.objects.all().delete()
+                    Guest.objects.all().delete()
+            except Exception as e:
+                raise CommandError(f"Failed to wipe existing data: {e}")
         else:
             if kwargs['dry_run']:
                 self.stdout.write('Dry run for update (no changes will be made)')
-            else:
-                if not kwargs['force']:
-                    self.stdout.write('Update (Room) data in place (experimental!) [y/n]')
-                    if getch().lower() != 'y':
-                        raise Exception('user said nope')
-
-                    self.stdout.write('Updating (room) data in place at user request!')
-                else:
-                    self.stdout.write('Updating (room) data in place.')
 
         create_rooms_main(self, kwargs)

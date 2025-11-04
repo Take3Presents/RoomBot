@@ -1,7 +1,18 @@
 from django.core.checks import Error, Warning, Info, register
 from django.core.exceptions import MultipleObjectsReturned
+from fuzzywuzzy import fuzz
 from reservations.models import Room, Guest
+from reservations import config as roombaht_config
 
+def room_guest_name_mismatch(room):
+    if not room.guest:
+        return False
+
+    for name in room.occupants():
+        if fuzz.ratio(room.guest.name, name) >= roombaht_config.NAME_FUZZ_FACTOR:
+            return False
+
+    return True
 
 def ticket_chain(p_guest, p_chain=None):
     """Build a ticket/transfer chain for a Guest."""
@@ -97,11 +108,13 @@ def room_drama_check(app_configs, **kwargs):
     errors = []
     rooms = Room.objects.all()
     for room in rooms:
+        # for every room, if there is a guest, make sure the number
+        # on the guest record matches the actual room number
         if room.guest and room.number != room.guest.room_number:
             errors.append(Error(f"Room/guest number mismatch {room.name_hotel} {room.number} / {room.guest.email} {room.guest.hotel} {room.guest.room_number}",
                                 hint='Manually reconcile room/guest numbers', obj=room))
 
-        if room.guest and (room.primary != room.guest.name and room.guest.name not in [x.strip() for x in room.secondary.split(',')]):
+        if room_guest_name_mismatch(room):
             errors.append(Error(f"Room/guest name mismatch {room.name_hotel} {room.number} {room.primary} / {room.guest.name}",
                                 hint='Manually reconcile room/guest names', obj=room))
 
@@ -115,7 +128,7 @@ def room_drama_check(app_configs, **kwargs):
                     errors.append(Error(f"Ticket {room.sp_ticket_id} room/guest number mismatch {room.number} / {guest.room_number}",
                                         hint='Manually reconcile room/guest numbers for specified ticket', obj=room))
 
-                if room.primary != guest.name and guest.name not in [x.strip() for x in room.secondary.split(',')]:
+                if room_guest_name_mismatch(room):
                     errors.append(Error(f"Room {room.name_hotel} {room.number} {room.sp_ticket_id} room/guest name mismatch {room.primary} / {guest.name}",
                                         hint='Manually reconcile room/guest names for specified ticket',
                                         obj=room))
@@ -153,14 +166,21 @@ def room_drama_check(app_configs, **kwargs):
                                         hint='Database corruption - manual reconciliation required', obj=room))
 
         # general corruption which could bubble up during orm/sql manipulation
+        missing = []
         if room.check_in is None:
-            errors.append(Warning(f"Room {room.name_hotel} {room.number} has blank check_in date",
-                                  hint='Fix source of truth for rooms',
-                                  obj=room))
-
+            missing.append('check_in')
         if room.check_out is None:
-            errors.append(Warning(f"Room {room.name_hotel} {room.number} has blank check_out date",
-                                  hint='Fix source of truth for rooms',
+            missing.append('check_out')
+
+        if missing:
+            pretty = [m.replace('_', '-') for m in missing]
+            if len(pretty) == 1:
+                msg = f"Room {room.name_hotel} {room.number} has blank {pretty[0]} date"
+            else:
+                msg = f"Room {room.name_hotel} {room.number} has blank {' and '.join(pretty)} dates"
+
+            errors.append(Warning(msg,
+                                  hint='Use commands room_fix for a single room or update_dates for multiple rooms',
                                   obj=room))
 
 

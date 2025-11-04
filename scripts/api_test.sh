@@ -84,7 +84,7 @@ run() {
            --default-check-in "1999/1/1" --default-check-out "1999/1/10"
 
     "$TAVERN" backend/tavern/test_guests.tavern.yml
-    manage generate_reports -o "$REPORTS_DIR"
+    manage generate_reports -o "$REPORTS_DIR" >> "$LOG" 2>&1
     manage room_list >> "$LOG" 2>&1
     manage room_list -t Queen >> "$LOG" 2>&1
     manage room_show --hotel ballys 400 >> "$LOG" 2>&1

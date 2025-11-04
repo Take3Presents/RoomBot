@@ -217,11 +217,28 @@ The `test_fill_rooms` Django command will assign rooms to admins at random, appr
 
 This command will _not_ run in production, and requires a manual confirmation in staging.
 
+## Data Consistency
+
+Given the three-way merge of RoomBot itself, AirTable, and Secret Party, to say nothing of the occasional `room_edit` command, it is possible that data can end up in a inconsistent state. Potential hazards of this include being unable to reconcile ticket transfers, and people being assigned to multiple, or the wrong, rooms. We validate data consistency using the Django system check framework. Invocation is different depending on whether you are interacting with a local or deployed host. System checks should be run after loading in data from external sources, and as part of troubleshooting potentially inconsistent data within RoomBot.
+
+For local development.
+
+```sh
+$ ./scripts/manage_dev check --deploy
+```
+
+For deployed host.
+```sh
+$ ./scripts/roombaht_ctl <user> <env> manage check --deploy
+```
+
+The system checks _should_ provide some hints on how to fix whatever problems come up. Errors definitely need to be addressed as leaving those are a guaranteed path to woe. Warnings can cause some problems, however should not result in confused guests.
+
 ## Images
 
 Images are kinda like data? There is a script that will either work based on an existing downloaded folder (i.e. if you have GDrive setup on a computer) or will attempt to use `gdown` to fetch the folder magially. It will then generate thumbnails and put the images in the right place. Not these images will _not_ end up in the git repo. Images will be fetched during the `frontend_build` step if they are not present.
 
-```
+```sh
 ./scripts/fetch-images
 ./scripts/fetch-images /path/to/gdrive/images
 ```

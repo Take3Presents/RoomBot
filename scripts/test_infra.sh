@@ -21,7 +21,7 @@ start() {
     fi
     cd "${BACKEND}"
     uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" \
-       --group dev --env-file "${ROOTDIR}/test.env" coverage run \
+       --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
        manage.py migrate >> "$LOG" 2>&1
     nohup uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml"  \
 	  --group dev --env-file "${ROOTDIR}/test.env" coverage run --append \
@@ -43,7 +43,8 @@ stop() {
 }
 
 report() {
-        uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage report -m --skip-covered
+    uv run --python "$(cat "${ROOTDIR}/.python-version")" --project "${ROOTDIR}/backend/pyproject.toml" --group dev --env-file "${ROOTDIR}/test.env" coverage report -m --skip-covered
+    rm "$COVERAGE_FILE"
 }
 
 if [ $# == 0 ] ; then

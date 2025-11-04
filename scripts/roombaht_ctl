@@ -140,7 +140,7 @@ elif [ "$ACTION" == "load_rooms" ] ; then
     STAFF_DEST="$(basename "$ROOM_SRC")"
     yeet_file "$ROOM_SRC" "$STAFF_DEST"
     yeet_script
-    yeet_ctl "load_rooms ${HOTEL} ${STAFF_DEST}"
+    yeet_ctl "load_rooms ${HOTEL} ${STAFF_DEST} $*"
 elif [ "$ACTION" == "backend-log" ] ; then
     yeet_command "sudo journalctl -f -u roombaht -u cron.service -t roombaht-oob -t uwsgi -n 100"
 elif [ "$ACTION" == "frontend-log" ] ; then

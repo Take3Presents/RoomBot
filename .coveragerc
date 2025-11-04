@@ -7,5 +7,5 @@ source =
 
 [report]
 omit =
-     backend/reservations/tests/*
-     backend/reservations/checks.py
+    backend/*/tests/*
+    backend/reservations/checks.py

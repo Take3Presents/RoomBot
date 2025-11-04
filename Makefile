@@ -67,7 +67,11 @@ local_tavern_tests: local_backend_env
 	./scripts/api_test.sh
 
 backend_unit_tests: local_backend_env
-	./scripts/manage_dev test backend/reservations
+	@CONFIG="$(shell pwd)/test.env"; \
+	if [ ! -e "$$CONFIG" ]; then echo "Config $$CONFIG not found"; exit 2; fi; \
+	. "$$CONFIG"; \
+	COVERAGE_FILE=.coverage COVERAGE_RCFILE=.coveragerc uv run --python `cat .python-version` --project backend/pyproject.toml -m coverage run --append -m pytest backend/reservations backend/waittime --maxfail=1 --disable-warnings -q; \
+	COVERAGE_FILE=.coverage COVERAGE_RCFILE=.coveragerc uv run --python `cat .python-version` --project backend/pyproject.toml -m coverage report -m
 
 # automagically generate django migrations
 local_backend_migrations: local_backend_env
