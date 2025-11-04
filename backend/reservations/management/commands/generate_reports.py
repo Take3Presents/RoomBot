@@ -9,9 +9,7 @@ VALID_REPORTS = [
     'swaps',
     'hotel_export',
     'rooming_list',
-    'dump_guest_rooms',
-    'diff_latest',
-    'diff_swaps_count'
+    'dump_guest_rooms'
 ]
 
 
@@ -19,7 +17,9 @@ class Command(BaseCommand):
     help = 'Generate CSV reports from reservations.reporting'
 
     def add_arguments(self, parser):
-        parser.add_argument('-r', '--reports', action='append', help='Report names to generate. Repeatable or comma-separated. Defaults to all.')
+        parser.add_argument('-r', '--reports',
+                            action='append',
+                            help=f"Report names to generate. Repeatable or comma-separated. Reports are {','.join(VALID_REPORTS)}. Defaults to all.")
         parser.add_argument('-H', '--hotel', help='Hotel name for hotel-specific reports (hotel_export, rooming_list)')
         parser.add_argument('-o', '--output-dir', help='Directory to write CSVs (default from config)')
         parser.add_argument('--overwrite', action='store_true', help='If set, allow overwriting existing files (default is timestamped filenames)')
@@ -62,24 +62,13 @@ class Command(BaseCommand):
                 hotel = options.get('hotel')
                 if not hotel:
                     for a_hotel in roombaht_config.GUEST_HOTELS:
-                        results.extend(reporting.roomling_list_export(a_hotel, output_dir=outdir))
+                        results.extend(reporting.rooming_list_export(a_hotel, output_dir=outdir))
 
                 else:
                     results.extend(reporting.rooming_list_export(hotel, output_dir=outdir))
 
             elif rep == 'dump_guest_rooms':
                 results.extend(reporting.dump_guest_rooms(output_dir=outdir))
-            elif rep == 'diff_latest':
-                # diff_latest expects rows or input_file; for CLI we will operate on DB only
-                # raising unless user wants to provide a file in future
-                raise CommandError('diff_latest is not supported from CLI without an input file')
-            elif rep == 'diff_swaps_count':
-                count = reporting.diff_swaps_count()
-                # write a small file with the count
-                filename = os.path.join(outdir, f'diff_swaps_count-{__import__("reservations.helpers").helpers.ts_suffix()}.txt')
-                with open(filename, 'w') as fh:
-                    fh.write(str(count) + '\n')
-                results.append(filename)
 
         for path in results:
             self.stdout.write(path)
