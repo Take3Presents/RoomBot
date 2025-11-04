@@ -49,23 +49,26 @@ class Command(BaseCommand):
 
         for rep in selected:
             if rep == 'swaps':
-                files = reporting.swaps_report(output_dir=outdir)
-                results.extend(files)
+                results.extend(reporting.swaps_report(output_dir=outdir))
             elif rep == 'hotel_export':
                 hotel = options.get('hotel')
                 if not hotel:
-                    raise CommandError('hotel_export requires --hotel')
-                files = reporting.hotel_export(hotel, output_dir=outdir)
-                results.extend(files)
+                    for a_hotel in roombaht_config.GUEST_HOTELS:
+                        results.extend(reporting.hotel_export(a_hotel, output_dir=outdir))
+
+                else:
+                    results.extend(reporting.hotel_export(hotel, output_dir=outdir))
             elif rep == 'rooming_list':
                 hotel = options.get('hotel')
                 if not hotel:
-                    raise CommandError('rooming_list requires --hotel')
-                files = reporting.rooming_list_export(hotel, output_dir=outdir)
-                results.extend(files)
+                    for a_hotel in roombaht_config.GUEST_HOTELS:
+                        results.extend(reporting.roomling_list_export(a_hotel, output_dir=outdir))
+
+                else:
+                    results.extend(reporting.rooming_list_export(hotel, output_dir=outdir))
+
             elif rep == 'dump_guest_rooms':
-                files = reporting.dump_guest_rooms(output_dir=outdir)
-                results.extend(files)
+                results.extend(reporting.dump_guest_rooms(output_dir=outdir))
             elif rep == 'diff_latest':
                 # diff_latest expects rows or input_file; for CLI we will operate on DB only
                 # raising unless user wants to provide a file in future
