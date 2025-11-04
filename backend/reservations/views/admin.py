@@ -24,6 +24,24 @@ logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 logger = logging.getLogger('ViewLogger_admin')
 
 
+def _ensure_list(x):
+    return x if isinstance(x, (list, tuple)) else [x]
+
+
+def _first_path(x):
+    """Return the first non-list/tuple element from x, or None.
+
+    If x is a list/tuple, recursively descend until a non-list is found.
+    """
+    if x is None:
+        return None
+    if isinstance(x, (list, tuple)):
+        if len(x) == 0:
+            return None
+        return _first_path(x[0])
+    return x
+
+
 @api_view(['POST'])
 def create_guests(request):
     guests_csv = "%s/guestUpload_latest.csv" % roombaht_config.TEMP_DIR
@@ -55,15 +73,15 @@ def run_reports(request):
 
         admin_emails = [admin.email for admin in Staff.objects.filter(is_admin=True)]
         guest_dump_file, room_dump_file = dump_guest_rooms()
-        swaps_file = swaps_report()
-        attachments = [
-            guest_dump_file,
-            room_dump_file,
-            swaps_file
-        ]
+
+        # swaps_report, hotel_export, rooming_list_export now return lists of paths
+        swaps_files = _ensure_list(swaps_report())
+        attachments = [guest_dump_file, room_dump_file]
+        attachments.extend(swaps_files)
+
         for hotel in roombaht_config.GUEST_HOTELS:
-            attachments.append(hotel_export(hotel))
-            attachments.append(rooming_list_export(hotel))
+            attachments.extend(_ensure_list(hotel_export(hotel)))
+            attachments.extend(_ensure_list(rooming_list_export(hotel)))
 
         send_email(admin_emails,
                    'RoomService RoomBaht - Report Time',
@@ -180,6 +198,7 @@ def guest_file_upload(request):
 
         return Response(resp, status=status.HTTP_201_CREATED)
 
+
 @api_view(['POST'])
 def fetch_reports(request):
     if request.method == 'POST':
@@ -187,28 +206,57 @@ def fetch_reports(request):
         if not auth_obj or 'email' not in auth_obj or not auth_obj['admin']:
             return unauthenticated()
 
-    if 'report' not in request.data or \
-       'hotel' not in request.data:
+    data = request.data
+    report = data.get('report')
+    hotel = data.get('hotel')
+
+    if not report:
         return Response("missing fields", status=status.HTTP_400_BAD_REQUEST)
 
-    if request.data['hotel'].title() not in roombaht_config.GUEST_HOTELS:
-        return Response("unknown hotel", status=status.HTTP_400_BAD_REQUEST)
+    # require hotel only for hotel-specific reports
+    if report in ('hotel', 'roomslist'):
+        if not hotel:
+            return Response("missing fields", status=status.HTTP_400_BAD_REQUEST)
+        if hotel.title() not in roombaht_config.GUEST_HOTELS:
+            return Response("unknown hotel", status=status.HTTP_400_BAD_REQUEST)
 
     export_file = None
-    if request.data['report'] == 'hotel':
-        export_file = hotel_export(request.data['hotel'])
-    elif request.data['report'] == 'roomslist':
-        export_file = rooming_list_export(request.data['hotel'])
-    elif request.data['report'] == 'room':
-        _guest_file, export_file = dump_guest_rooms()
-    elif request.data['report'] == 'guest':
-        export_file, _room_file = dump_guest_rooms()
-    elif request.data['report'] == 'swaps':
-        export_file = swaps_report()
+    if report == 'hotel':
+        files = _ensure_list(hotel_export(hotel))
+        export_file = files[0] if files else None
+    elif report == 'roomslist':
+        files = _ensure_list(rooming_list_export(hotel))
+        export_file = files[0] if files else None
+    elif report == 'room':
+        files = _ensure_list(dump_guest_rooms())
+        if len(files) >= 2:
+            export_file = files[1]
+        elif len(files) == 1:
+            export_file = files[0]
+        else:
+            return Response("no export file", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif report == 'guest':
+        files = _ensure_list(dump_guest_rooms())
+        export_file = files[0] if files else None
+    elif report == 'swaps':
+        files = _ensure_list(swaps_report())
+        export_file = files[0] if files else None
     else:
         return Response("unknown report", status=status.HTTP_400_BAD_REQUEST)
 
-    response = HttpResponse(open(export_file, 'r'), content_type='text/csv')
+    # pick first non-list path reliably
+    export_file = _first_path(export_file)
+
+    if not export_file:
+        return Response("no export file", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    try:
+        fh = open(export_file, 'r', encoding='utf-8')
+    except Exception:
+        logger.exception("Failed to open export file %s", export_file)
+        return Response("failed to open export file", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    response = HttpResponse(fh, content_type='text/csv')
     response['Content-Disposition'] = f"attachment; filename={os.path.basename(export_file)}"
 
     return response

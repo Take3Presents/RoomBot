@@ -1,0 +1,74 @@
+from django.core.management.base import BaseCommand, CommandError
+import reservations.reporting as reporting
+import reservations.config as roombaht_config
+from reservations.helpers import ts_suffix
+import os
+
+
+VALID_REPORTS = [
+    'swaps',
+    'hotel_export',
+    'rooming_list',
+    'dump_guest_rooms'
+]
+
+
+class Command(BaseCommand):
+    help = 'Generate CSV reports from reservations.reporting'
+
+    def add_arguments(self, parser):
+        parser.add_argument('-r', '--reports',
+                            action='append',
+                            help=f"Report names to generate. Repeatable or comma-separated. Reports are {','.join(VALID_REPORTS)}. Defaults to all.")
+        parser.add_argument('-H', '--hotel', help='Hotel name for hotel-specific reports (hotel_export, rooming_list)')
+        parser.add_argument('-o', '--output-dir', help='Directory to write CSVs (default from config)')
+        parser.add_argument('--overwrite', action='store_true', help='If set, allow overwriting existing files (default is timestamped filenames)')
+
+    def handle(self, *args, **options):
+        reports_opt = options.get('reports')
+        if not reports_opt:
+            selected = VALID_REPORTS.copy()
+        else:
+            # normalize comma-separated or repeatable
+            selected = []
+            for item in reports_opt:
+                for part in item.split(','):
+                    p = part.strip()
+                    if p:
+                        selected.append(p)
+
+        invalid = [r for r in selected if r not in VALID_REPORTS]
+        if invalid:
+            raise CommandError(f'Invalid report names: {invalid}. Valid: {VALID_REPORTS}')
+
+        outdir = options.get('output_dir') or roombaht_config.TEMP_DIR
+        if not os.path.isdir(outdir):
+            raise CommandError(f'Output directory does not exist: {outdir}')
+
+        results = []
+
+        for rep in selected:
+            if rep == 'swaps':
+                results.extend(reporting.swaps_report(output_dir=outdir))
+            elif rep == 'hotel_export':
+                hotel = options.get('hotel')
+                if not hotel:
+                    for a_hotel in roombaht_config.GUEST_HOTELS:
+                        results.extend(reporting.hotel_export(a_hotel, output_dir=outdir))
+
+                else:
+                    results.extend(reporting.hotel_export(hotel, output_dir=outdir))
+            elif rep == 'rooming_list':
+                hotel = options.get('hotel')
+                if not hotel:
+                    for a_hotel in roombaht_config.GUEST_HOTELS:
+                        results.extend(reporting.rooming_list_export(a_hotel, output_dir=outdir))
+
+                else:
+                    results.extend(reporting.rooming_list_export(hotel, output_dir=outdir))
+
+            elif rep == 'dump_guest_rooms':
+                results.extend(reporting.dump_guest_rooms(output_dir=outdir))
+
+        for path in results:
+            self.stdout.write(path)
