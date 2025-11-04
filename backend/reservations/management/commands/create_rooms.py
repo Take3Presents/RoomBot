@@ -13,6 +13,10 @@ from reservations.management import getch, setup_logging
 logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 logger = logging.getLogger('create_rooms')
 
+def debug(msg, args):
+    if args.get('verbosity', 1) >= 2:
+        cmd.stdout.write(msg)
+
 def guest_changes(guest):
     dirty_fields = guest.get_dirty_fields(verbose=True)
     msg = f"{guest.email} {'changes' if len(dirty_fields) > 0 else 'changed'}\n"
@@ -68,8 +72,7 @@ def create_rooms_main(cmd, args):
     if len(dupe_tickets) > 0:
         raise Exception(f"Duplicate ticket id(s) {','.join(dupe_tickets)} in CSV, refusing to process file")
 
-    if args.get('verbosity', 1) == 2:
-        cmd.stdout.write("read in {{len(rooms_rows)} rooms for {hotel}")
+    debug(f"read in {len(rooms_rows)} rooms for {hotel}", args)
 
     processed_rooms = []
     for elem in rooms_import_list:
@@ -142,7 +145,7 @@ def create_rooms_main(cmd, args):
                 room.is_swappable = False
             else:
                 if elem.ticket_id_in_secret_party == '':
-                    logger.debug("Skipping roombot-placed room %s, as it is marked as available in airtable", room.number)
+                    debug(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable", args)
                     continue
 
                 cmd.stdout.write(cmd.style.WARNING(f"Roombot-placed Room {room.number} showing as empty in airtable!"))
@@ -160,28 +163,35 @@ def create_rooms_main(cmd, args):
                 primary_name = f"{primary_name} {elem.last_name_resident}"
 
             if room.primary != primary_name.title():
+                fuzziness = fuzz.ratio(room.primary, primary_name)
                 if room.guest and room.guest.transfer:
                     trans_guest = room.guest.chain(room.guest.transfer)[-1]
                     if elem.ticket_id_in_secret_party == room.guest.ticket:
-                        fuzziness = fuzz.ratio(room.primary, primary_name)
                         if fuzziness >= args['fuzziness']:
-                            if args.get('verbosity', 1) >= 2:
-                                cmd.stdout.write(f"Updating primary name for {room.number} transfer {room.guest.transfer}"
-                                                  f" {room.primary}->{primary_name} ({fuzziness}"
-                                                  f" fuzziness within threshold of {args['fuzziness']}")
-                            room.primary = primary_name.title()
+                            debug(cmd.style.SUCCESS(f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
+                                                    f" {room.primary} -> {primary_name}"), args)
                         else:
-                            cmd.stdout.write(cmd.style.WARNING(
-                                f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
-                                f" {room.primary}->{primary_name} ({fuzziness} fuzziness exceeds threshold of {args['fuzziness']}"))
+                            room.primary = primary_name.title()
+
                     elif trans_guest.name == primary_name.title():
                             cmd.stdout.write(cmd.style.WARNING(
                                 f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
                                 f" {room.primary} -> {primary_name}"))
                     else:
-                        room.primary = primary_name.title()
+                        if fuzziness <= args['fuzziness']:
+                            room.primary = primary_name.title()
+                        else:
+                            debug(cmd.style.SUCCESS(f"Not updating primary name for {room.number}"
+                                                    f"{room.primary}->{primary_name} ({fuzziness}"
+                                                    f" fuzziness within threshold of {args['fuzziness']}"), args)
                 else:
-                    room.primary = primary_name.title()
+                    if fuzziness <= args['fuzziness']:
+                        room.primary = primary_name.title()
+                    else:
+                        cmd.stdout.write(cmd.style.SUCCESS(f"Not updating primary name for {room.number}"
+                                                           f" {room.primary}->{primary_name} ({fuzziness}"
+                                                           f" fuzziness within threshold of {args['fuzziness']}"))
+
 
             if elem.placed_by == '':
                 cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} Reserved w/o placer"))
@@ -276,7 +286,7 @@ def create_rooms_main(cmd, args):
                 if old_room and old_room.is_dirty(check_relationship=True):
                     cmd.stdout.write(cmd.style.MIGRATE_LABEL(f"Old Room\n{room_changes(room)}\n"))
 
-                cmd.stdout.write(room_changes(room))
+                cmd.stdout.write(cmd.style.MIGRATE_LABEL(room_changes(room)))
             else:
                 if room_update and not args['force']:
                     msg = "Proposed Changes\n"
@@ -351,8 +361,7 @@ def create_rooms_main(cmd, args):
             processed_rooms.append(room.number)
 
         else:
-            if args.get('verbosity', 1) >= 2:
-                cmd.stdout.write(f"No changes to room {room.number}")
+            debug(f"No changes to room {room.number}", args)
 
 
     total_rooms = 0

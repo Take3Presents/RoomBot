@@ -38,6 +38,7 @@ class Command(BaseCommand):
             occupants = room.occupants()
             matched_any = False
 
+            max_fuzz = 0
             # First try to fuzz match as before
             for name in occupants:
                 fuzziness = fuzz.ratio(room.guest.name, name)
@@ -49,11 +50,14 @@ class Command(BaseCommand):
                         guest.name = name
                         guest.save()
 
+                if fuzziness > max_fuzz:
+                    max_fuzz = fuzziness
+
             if matched_any:
                 return
 
             # No fuzzy matches: present a numbered list and a quit option
-            self.stdout.write("No fuzzy matches found. Please select the correct occupant to associate with this room:")
+            self.stdout.write(f"No fuzzy matches found (max {max_fuzz}. Please select the correct occupant to associate with this room:")
             for idx, name in enumerate(occupants, start=1):
                 self.stdout.write(f"{idx}. {name}")
             self.stdout.write("q. Quit")
@@ -101,6 +105,7 @@ class Command(BaseCommand):
                 guest.hotel = room.name_hotel
                 if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
                     guest.can_login = True
+
                 guest.save()
                 self.stdout.write(self.style.SUCCESS(f"Associated existing guest {guest.email or '[no email]'} ({guest.name}) with room {room.number}"))
             else:
