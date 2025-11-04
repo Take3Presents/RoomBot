@@ -3,6 +3,7 @@ import re
 import sys
 from fuzzywuzzy import fuzz
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from pydantic import ValidationError
 import reservations.config as roombaht_config
 from reservations.helpers import ingest_csv
@@ -326,16 +327,25 @@ def create_rooms_main(cmd, args):
                     if room.is_special:
                         room_msg += ", special!"
 
-                if old_guest and old_guest.is_dirty():
-                    old_guest.save_dirty_fields()
+                # Wrap all related database writes for this room in a single transaction
+                # so either all related changes commit or none do.
+                try:
+                    with transaction.atomic():
+                        if old_guest and old_guest.is_dirty():
+                            old_guest.save_dirty_fields()
 
-                if old_room and old_room.is_dirty(check_relationship=True):
-                    old_room.save_dirty_fields()
+                        if old_room and old_room.is_dirty(check_relationship=True):
+                            old_room.save_dirty_fields()
 
-                if room.guest and room.guest.is_dirty():
-                    room.guest.save_dirty_fields()
+                        if room.guest and room.guest.is_dirty():
+                            room.guest.save_dirty_fields()
 
-                room.save_dirty_fields()
+                        room.save_dirty_fields()
+                except Exception as e:
+                    # Surface the error to the user and skip further processing of this room
+                    cmd.stdout.write(cmd.style.ERROR(f"Failed to save changes for room {room.number}: {e}"))
+                    continue
+
                 cmd.stdout.write(cmd.style.SUCCESS(room_msg))
 
             # build up some ingestion metrics
@@ -442,8 +452,13 @@ class Command(BaseCommand):
                 else:
                     logger.info('Wiping all data at user request!')
 
-            Room.objects.all().delete()
-            Guest.objects.all().delete()
+            # Wrap deletes in a transaction to ensure the wipe is atomic.
+            try:
+                with transaction.atomic():
+                    Room.objects.all().delete()
+                    Guest.objects.all().delete()
+            except Exception as e:
+                raise CommandError(f"Failed to wipe existing data: {e}")
         else:
             if kwargs['dry_run']:
                 self.stdout.write('Dry run for update (no changes will be made)')

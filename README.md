@@ -219,7 +219,7 @@ This command will _not_ run in production, and requires a manual confirmation in
 
 ## Data Consistency
 
-Given the three-way merge of RoomBot itself, AirTable, and Secret Party, to say nothing of the occasional `room_edit` command, it is possible that data can end up in a inconsistent state. Potential hazards of this include being unable to reconcile ticket transfers, and people being assigned to multiple, or the wrong, rooms. We validate data consistency using the Django system check framework. Invocation is different depending on whether you are interacting with a local or deployed host.
+Given the three-way merge of RoomBot itself, AirTable, and Secret Party, to say nothing of the occasional `room_edit` command, it is possible that data can end up in a inconsistent state. Potential hazards of this include being unable to reconcile ticket transfers, and people being assigned to multiple, or the wrong, rooms. We validate data consistency using the Django system check framework. Invocation is different depending on whether you are interacting with a local or deployed host. System checks should be run after loading in data from external sources, and as part of troubleshooting potentially inconsistent data within RoomBot.
 
 For local development.
 
