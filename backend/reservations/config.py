@@ -39,3 +39,9 @@ ROOM_COOLDOWN = int(env_config('room_cooldown', '30'))
 SWAP_CODE_LIFE = int(env_config('swap_code_life', '3600'))
 
 SP_API_KEY = env_config('sp_api_key')
+
+# set the global default for fuzzy name matching. this may be overridden in some managment commands
+NAME_FUZZ_FACTOR = int(env_config('name_fuzz_factor', '75'))
+
+DEFAULT_CHECK_IN = env_config('default_check_in', '11/14')
+DEFAULT_CHECK_OUT = env_config('default_check_out', '11/17')

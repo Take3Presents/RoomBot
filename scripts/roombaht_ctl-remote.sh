@@ -261,7 +261,7 @@ if [ "$ACTION" == "load_staff" ] ; then
 elif [ "$ACTION" == "load_rooms" ] ; then
     HOTEL="$1"
     ROOM_FILE="/tmp/${2}"
-    shift
+    shift 2
     env_check
     if [ ! -e "$ROOM_FILE" ] ; then
 	problems "Unable to load rooms from ${ROOM_FILE}"
@@ -269,7 +269,7 @@ elif [ "$ACTION" == "load_rooms" ] ; then
     db_connection
     "/opt/roombaht-backend/.venv/bin/python3" \
 	"/opt/roombaht-backend/manage.py" \
-	create_rooms "$ROOM_FILE" --hotel "$HOTEL" --preserve --skip-on-mismatch
+	create_rooms "$ROOM_FILE" --hotel "$HOTEL" --preserve --skip-on-mismatch $*
 elif [ "$ACTION" == "clone_db" ] ; then
     SOURCE_DB="roombaht"
     while getopts "d:" arg; do
