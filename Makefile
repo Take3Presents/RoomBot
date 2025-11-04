@@ -68,6 +68,7 @@ local_tavern_tests: local_backend_env
 
 backend_unit_tests: local_backend_env
 	./scripts/manage_dev test backend/reservations
+	./scripts/manage_dev test backend/waittime
 
 # automagically generate django migrations
 local_backend_migrations: local_backend_env
