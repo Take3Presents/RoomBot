@@ -63,9 +63,9 @@ export default class BasicVis extends React.Component {
         <Row className="justify-content-md-center">
           <Col width="100">
             <p></p>
-   	        {animated ?
+	        {animated ?
                  <ProgressBar animated now={this.state.metrics.percent_placed} label={`Percent placed ${this.state.metrics.percent_placed}%`} />
-	         :
+		 	 :
 	             <ProgressBar now={this.state.metrics.percent_placed} label={`Percent placed ${this.state.metrics.percent_placed}%`} />
 	        }
             <p></p>
@@ -84,6 +84,14 @@ export default class BasicVis extends React.Component {
               <div className="card-subtitle mb-2 text-muted">Unplaced: {this.state.metrics.guest_unplaced}</div>
               <div className="card-subtitle mb-2 text-muted">Swaps Created: {this.state.metrics.rooms_swap_code_count}</div>
               <div className="card-subtitle mb-2 text-muted">Swaps Completed: {this.state.metrics.rooms_swap_success_count}</div>
+
+              {/* New per-email (deduplicated) guest metrics */}
+              <div className="card-subtitle mb-2 text-muted">Onboarding Sent (eligible users): {this.state.metrics.onboarding_sent_emails}</div>
+              <div className="card-subtitle mb-2 text-muted">Onboarding Pending (eligible users): {this.state.metrics.onboarding_pending_emails}</div>
+              <div className="card-subtitle mb-2 text-muted">Can Login (emails): {this.state.metrics.can_login_emails}</div>
+              <div className="card-subtitle mb-2 text-muted">Users with Rooms: {this.state.metrics.users_with_rooms}</div>
+              <div className="card-subtitle mb-2 text-muted">Known Tickets: {this.state.metrics.known_tickets}</div>
+
           </Col>
           <Col xs lg="4">
               <h5> Rooms</h5>

@@ -139,6 +139,21 @@ stages:
                 version:
                   type: "str"
                   required: true
+                onboarding_sent_emails:
+                  type: "int"
+                  required: true
+                onboarding_pending_emails:
+                  type: "int"
+                  required: true
+                can_login_emails:
+                  type: "int"
+                  required: true
+                users_with_rooms:
+                  type: "int"
+                  required: true
+                known_tickets:
+                  type: "int"
+                  required: true
 
   - name: "can request reports"
     request:
