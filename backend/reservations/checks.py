@@ -179,8 +179,8 @@ def secret_party_data_check(app_configs, **kwargs):
     """Check database state against Secret Party source data to detect missing room assignments."""
 
     if not roombaht_config.SP_SYSTEM_CHECKS:
-        return Info("Skipping secret party data check",
-                    hint='This check does not run in tests or CI')
+        return [Info("Skipping secret party data check",
+                     hint='This check does not run in tests or CI')]
 
     errors = []
 
