@@ -31,7 +31,7 @@ TEMP_DIR = env_config('tmp', '/tmp')
 IGNORE_TRANSACTIONS = env_config('ignore_transactions').split(',')
 SWAPS_ENABLED = env_config('swaps_enabled', 'true').lower() == 'true'
 GUEST_HOTELS = env_config('guest_hotels', 'Ballys,Nugget').split(',')
-VISIBLE_HOTELS = env_config('visible_hotels', 'Ballys').split(',')
+VISIBLE_HOTELS = env_config('visible_hotels', 'Ballys,Nugget').split(',')
 
 FEATURES = env_config('features', '').split(',')
 
@@ -45,3 +45,5 @@ NAME_FUZZ_FACTOR = int(env_config('name_fuzz_factor', '75'))
 
 DEFAULT_CHECK_IN = env_config('default_check_in', '11/14')
 DEFAULT_CHECK_OUT = env_config('default_check_out', '11/17')
+
+CHECK_CACHE_DIR = env_config('check_cache_dir', os.path.expanduser('~/.cache/roombot'))

@@ -1,4 +1,4 @@
-from django.core.checks import Error, Warning, Info, register
+from django.core.checks import Error, Warning, Info, register, Tags
 from django.core.exceptions import MultipleObjectsReturned
 from fuzzywuzzy import fuzz
 from reservations.models import Room, Guest
@@ -14,67 +14,48 @@ def room_guest_name_mismatch(room):
 
     return True
 
-def ticket_chain(p_guest, p_chain=None):
-    """Build a ticket/transfer chain for a Guest."""
-    if p_chain is None:
-        p_chain = []
-
-    a_chain = [p_guest] + p_chain
-
+def ticket_chain(p_guest):
     if not p_guest.transfer or p_guest.transfer == '':
-        return a_chain
+        return [p_guest]
 
-    try:
-        a_guest = Guest.objects.get(ticket=p_guest.transfer)
-    except Guest.DoesNotExist:
-        return a_chain
+    # Use the model implementation to build the forward chain starting from
+    # the ticket referenced by this guest's transfer. Guest.chain returns a
+    # list ordered from the start ticket toward the tail, so reverse it to
+    # match the previous ordering ([tail, ..., start]).
+    forward_chain = Guest.chain(p_guest.transfer)
+    combined = [p_guest] + forward_chain
+    return list(reversed(combined))
 
-    return ticket_chain(a_guest, a_chain)
 
-
-@register(deploy=True)
+@register(Tags.database, deploy=True)
 def guest_drama_check(app_configs, **kwargs):
     errors = []
     guests = Guest.objects.all()
 
 
     for guest in guests:
+        # every guest record should be updated when jwt is changed. this check
+        # should only trigger as side effect of orm manipulation
         if guest.jwt == '' and guest.can_login:
             errors.append(Warning(f"Guest {guest.email} has an empty jwt field!",
                                   hint="Reset password via ux or user_edit",
                                   obj=guest))
 
-        if guest.ticket and Guest.objects.filter(ticket = guest.ticket).count() > 1:
+
+        # guests will be set to login when created during secretparty import
+        # according to the VISIBLE_HOTELS config. if this changes after a
+        # guest was imported, or there was some orm fuckery, this check will trigger
+        if guest.room_set.count() == 1 and \
+           guest.hotel in roombaht_config.VISIBLE_HOTELS \
+           and not guest.can_login:
+            errors.append(Warning(f"Guest {guest.email} should be able to login!",
+                                  hint="Use user_edit to fix",
+                                  obj=guest))
+
+        # should only occur due to orm fuckery, and potentially odd airtable intake
+        if guest.ticket and Guest.objects.filter(ticket=guest.ticket).count() > 1:
             errors.append(Error(f"Guest {guest.email}, ticket {guest.ticket} shared with other users",
                                 obj=guest))
-
-        guest_transfer_chain = ticket_chain(guest)
-        chain_tail = [x for x in guest_transfer_chain if x.transfer == '']
-        if len(chain_tail) == 0:
-            errors.append(Error(f"Transfer chail tail not found {[x.ticket for x in guest_transfer_chain]}",
-                          hint="Unable to find guest record w/o transfer in this chain." \
-                                "Manually reconcile against SP exports.", obj=guest))
-
-        for chain_guest in guest_transfer_chain:
-            if chain_guest.transfer == '' \
-               and chain_guest.ticket != '' \
-                and chain_guest.hotel is not None \
-                and chain_guest.room_number is not None:
-                try:
-                    chain_room = Room.objects.get(name_hotel=chain_guest.hotel, number=chain_guest.room_number)
-                    if chain_room.is_placed and chain_guest.ticket != chain_room.sp_ticket_id:
-                        errors.append(Warning(f"Room {chain_room.name_take3} {chain_room.number} ticket {chain_room.sp_ticket_id}" \
-                                              f" does not match guest {guest.name}, ticket {guest.ticket}",
-                                      hint="Manual reconciliation? Good luck, starfighter.",
-                                      obj=guest))
-                except Room.DoesNotExist:
-                    errors.append(Warning(f"Unable to find corresponding room for {guest.email}, ticket {guest.ticket}",
-                                          hint="Reimporting SP or manual reconciliation (or bug!)",
-                                          obj=guest))
-                except MultipleObjectsReturned:
-                    errors.append(Error(f"Multiple rooms found for hotel={chain_guest.hotel}, number={chain_guest.room_number} (guest {guest.email})",
-                                        hint="Database corruption - manual reconciliation required",
-                                        obj=guest))
 
     multi_room = [','.join([str(x) for x in Guest.objects.all() if x.room_set.count() > 1])]
     if len([x for x in multi_room if len(x) > 0]) > 0:
@@ -103,7 +84,7 @@ def guest_drama_check(app_configs, **kwargs):
 
     return errors
 
-@register(deploy=True)
+@register(Tags.database, deploy=True)
 def room_drama_check(app_configs, **kwargs):
     errors = []
     rooms = Room.objects.all()
@@ -183,5 +164,163 @@ def room_drama_check(app_configs, **kwargs):
                                   hint='Use commands room_fix for a single room or update_dates for multiple rooms',
                                   obj=room))
 
+
+    return errors
+
+
+@register(Tags.database, deploy=True)
+def secret_party_data_check(app_configs, **kwargs):
+    """Check database state against Secret Party source data to detect missing room assignments."""
+    import json
+    import os
+    from datetime import datetime, timedelta
+    from pathlib import Path
+    from reservations.secret_party import SecretPartyClient
+    from reservations import config as roombaht_config
+    from reservations.ingest_models import SecretPartyGuestIngest
+    from reservations.constants import ROOM_LIST
+
+    errors = []
+
+    # Build set of all room product names from ROOM_LIST
+    room_products = set()
+    for room_type, room_data in ROOM_LIST.items():
+        room_products.update(room_data['rooms'])
+
+    # Set up cache directory and file (expand ~ to home directory)
+    cache_dir = Path(roombaht_config.CHECK_CACHE_DIR).expanduser()
+    cache_file = cache_dir / 'secret_party_check.json'
+    cache_max_age = timedelta(hours=1)  # Cache for 1 hour
+
+    sp_data = None
+
+    # Try to load from cache first
+    if cache_file.exists():
+        try:
+            cache_mtime = datetime.fromtimestamp(cache_file.stat().st_mtime)
+            if datetime.now() - cache_mtime < cache_max_age:
+                with open(cache_file, 'r') as f:
+                    sp_data = json.load(f)
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            errors.append(Warning(
+                f"Failed to read cache file {cache_file}: {e}",
+                hint="Cache will be refreshed from Secret Party API"
+            ))
+
+    # Fetch from API if cache miss or expired
+    if sp_data is None:
+        if not roombaht_config.SP_API_KEY:
+            errors.append(Warning(
+                "SP_API_KEY not configured - skipping Secret Party data check",
+                hint="Set ROOMBAHT_SP_API_KEY environment variable to enable this check"
+            ))
+            return errors
+
+        try:
+            client = SecretPartyClient(roombaht_config.SP_API_KEY)
+            sp_data = client.get_all_active_and_transferred_tickets()
+
+            # Write to cache
+            try:
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                with open(cache_file, 'w') as f:
+                    json.dump(sp_data, f)
+                errors.append(Info(
+                    f"Secret Party data cached to {cache_file}",
+                    hint="Cache is valid for 1 hour"
+                ))
+            except Exception as cache_error:
+                errors.append(Warning(
+                    f"Failed to write cache to {cache_file}: {cache_error}",
+                    hint="Check directory permissions. Data will be re-fetched on next check."
+                ))
+
+        except Exception as e:
+            errors.append(Warning(
+                f"Failed to fetch Secret Party data: {e}",
+                hint="Check API key and network connectivity. System check will be skipped."
+            ))
+            return errors
+
+    # Process Secret Party data and compare with database
+    transferred_tickets = set(Guest.objects.exclude(transfer='').exclude(transfer__isnull=True).values_list('transfer', flat=True))
+
+    for ticket_data in sp_data:
+        try:
+            guest_obj = SecretPartyGuestIngest.from_source(ticket_data, source_type='json')
+
+            # Skip if not a room product
+            if guest_obj.product not in room_products:
+                continue
+
+            ticket_code = guest_obj.ticket_code
+
+            # Check if this ticket was transferred away (intermediate in chain)
+            if ticket_code in transferred_tickets:
+                continue  # Intermediate guests shouldn't have rooms
+
+            # This is a tail guest with a room product - they should have a room assignment
+            try:
+                guest = Guest.objects.get(ticket=ticket_code)
+
+                # Check if they have a room assigned
+                if guest.room_number is None and guest.room_set.count() == 0:
+                    errors.append(Error(
+                        f"Guest {guest.email} (ticket {ticket_code}) has room product '{guest_obj.product}' in Secret Party but no room assigned in database",
+                        hint="Room assignment may have failed during ingestion. Consider re-running ingestion or manual assignment.",
+                        obj=guest
+                    ))
+                elif guest.room_number is not None and guest.room_set.count() == 0:
+                    errors.append(Error(
+                        f"Guest {guest.email} (ticket {ticket_code}) has room_number='{guest.room_number}' but no Room object with associated guest",
+                        hint="Database inconsistency - room_number is set but Room.guest is missing.",
+                        obj=guest
+                    ))
+
+            except Guest.DoesNotExist:
+                errors.append(Warning(
+                    f"Ticket {ticket_code} with room product '{guest_obj.product}' exists in Secret Party but not in database",
+                    hint="Guest may not have been ingested yet. Run ingest_secret_party command."
+                ))
+            except Guest.MultipleObjectsReturned:
+                errors.append(Error(
+                    f"Multiple Guest records found for ticket {ticket_code}",
+                    hint="Database corruption - duplicate ticket codes exist."
+                ))
+
+        except Exception as e:
+            errors.append(Warning(
+                f"Error processing Secret Party ticket data: {e}",
+                hint="Check data format and ingestion models"
+            ))
+
+    return errors
+
+
+@register(Tags.database, deploy=True)
+def intermediate_transfer_guest_check(app_configs, **kwargs):
+    """Check for intermediate guest records in transfer chains that incorrectly have rooms assigned."""
+    errors = []
+
+    # Find guests whose tickets WERE transferred to someone else
+    transferred_tickets = set(Guest.objects.exclude(transfer='').exclude(transfer__isnull=True).values_list('transfer', flat=True))
+    intermediate_guests = Guest.objects.filter(ticket__in=transferred_tickets)
+
+    for guest in intermediate_guests:
+        # Intermediate guests should NOT have rooms assigned
+        if guest.room_number is not None:
+            errors.append(Error(
+                f"Intermediate transfer guest {guest.email} (ticket {guest.ticket}, was transferred to someone else) has room_number '{guest.room_number}'",
+                hint="Only the final guest in a transfer chain should have a room. Check transfer processing.",
+                obj=guest
+            ))
+
+        if guest.room_set.count() > 0:
+            room_list = ', '.join([f"{r.name_hotel} {r.number}" for r in guest.room_set.all()])
+            errors.append(Error(
+                f"Intermediate transfer guest {guest.email} (ticket {guest.ticket}, was transferred to someone else) has Room objects assigned: {room_list}",
+                hint="Only the final guest in a transfer chain should have associated Room. Check transfer processing.",
+                obj=guest
+            ))
 
     return errors
