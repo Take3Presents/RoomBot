@@ -45,7 +45,7 @@ class Command(BaseCommand):
         for guest in guest_emails:
             rooms = Room.objects \
                         .filter(is_placed=False,
-                                name_hotel='Ballys')
+                                name_hotel__in=roombaht_config.VISIBLE_HOTELS)
             if len(rooms) > 0:
                 emails.append(guest)
 
