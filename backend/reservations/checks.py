@@ -3,6 +3,12 @@ from django.core.exceptions import MultipleObjectsReturned
 from fuzzywuzzy import fuzz
 from reservations.models import Room, Guest
 from reservations import config as roombaht_config
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+from reservations.secret_party import SecretPartyClient
+from reservations.ingest_models import SecretPartyGuestIngest
+from reservations.constants import ROOM_LIST
 
 def room_guest_name_mismatch(room):
     if not room.guest:
@@ -171,14 +177,10 @@ def room_drama_check(app_configs, **kwargs):
 @register(Tags.database, deploy=True)
 def secret_party_data_check(app_configs, **kwargs):
     """Check database state against Secret Party source data to detect missing room assignments."""
-    import json
-    import os
-    from datetime import datetime, timedelta
-    from pathlib import Path
-    from reservations.secret_party import SecretPartyClient
-    from reservations import config as roombaht_config
-    from reservations.ingest_models import SecretPartyGuestIngest
-    from reservations.constants import ROOM_LIST
+
+    if not roombaht_config.SP_SYSTEM_CHECKS:
+        return Info("Skipping secret party data check",
+                    hint='This check does not run in tests or CI')
 
     errors = []
 
