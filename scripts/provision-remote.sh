@@ -102,3 +102,5 @@ sudo_user gadget
 sudo_user index
 sudo_user cubes
 sudo_user whiteavian
+
+service_cleanup
