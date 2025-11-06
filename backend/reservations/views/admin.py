@@ -19,6 +19,7 @@ import reservations.config as roombaht_config
 from reservations.auth import authenticate_admin, unauthenticated
 from reservations.services.guest_validation_service import GuestValidationService
 from reservations.services.guest_ingestion_service import GuestIngestionService
+from reservations.metrics import get_all_metrics
 
 logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 logger = logging.getLogger('ViewLogger_admin')
@@ -98,53 +99,7 @@ def request_metrics(request):
         if not auth_obj or 'email' not in auth_obj or not auth_obj['admin']:
             return unauthenticated()
 
-        rooooms = Room.objects.all()
-        guessssts = Guest.objects.all()
-
-        guest_unique = len(set([guest.email for guest in guessssts]))
-        guest_count = Guest.objects.all().count()
-        guest_unplaced = len(guessssts.filter(room=None, ticket__isnull=True))
-
-        rooms_count = rooooms.count()
-        rooms_occupied = rooooms.exclude(is_available=True).count()
-        rooms_swappable = rooooms.exclude(is_swappable=False).count()
-        # rooms available: has not yet been placed, roombaht or other
-        rooms_available = rooooms.exclude(is_available=False).count()
-        # rooms placed by roombot: rooms available to be placed by
-        rooms_placed_by_roombot = rooooms.exclude(placed_by_roombot=False).count()
-        rooms_placed_manually = rooooms.exclude(placed_by_roombot=True).count()
-        rooms_swap_code_count = rooooms.filter(swap_code__isnull=False).count()
-
-        if(rooms_occupied!=0 and rooms_count!=0):
-            percent_placed = round(float(rooms_occupied) / float(rooms_count) * 100, 2)
-        else:
-            percent_placed = 0
-
-        room_metrics = []
-        for room_type in ROOM_LIST.keys():
-            room_total = rooooms.filter(name_take3=room_type).count()
-            if room_total > 0:
-                room_metrics.append({
-                    "room_type": f"{ROOM_LIST[room_type]['hotel']} - {room_type}",
-                    "total": room_total,
-                    "unoccupied": rooooms.filter(name_take3=room_type, is_available=True).count()
-                })
-
-        metrics = {"guest_count": guest_count,
-                   "guest_unique": guest_unique,
-                   "guest_unplaced": guest_unplaced,
-                   "rooms_count": rooms_count,
-                   "rooms_occupied": rooms_occupied,
-                   "rooms_swappable": rooms_swappable,
-                   "rooms_available": rooms_available,
-                   "rooms_placed_by_roombot": rooms_placed_by_roombot,
-                   "rooms_placed_manually": rooms_placed_manually,
-                   "percent_placed": int(percent_placed),
-                   "rooms_swap_code_count": rooms_swap_code_count,
-                   "rooms_swap_success_count": diff_swaps_count(),
-                   "rooms": room_metrics,
-                   "version": roombaht_config.VERSION.rstrip()
-                   }
+        metrics = get_all_metrics()
 
         return Response(metrics, status=status.HTTP_201_CREATED)
 

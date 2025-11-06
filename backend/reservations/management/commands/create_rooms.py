@@ -28,7 +28,7 @@ def guest_changes(guest):
     return msg
 
 def room_changes(room):
-    msg = f"{room.name_hotel:9}{room.number:4} changes\n"
+    msg = f"{room.name_hotel:9}{room.number:4} {room.name_take3} changes\n"
     for field, values in room.get_dirty_fields(verbose=True, check_relationship=True).items():
         saved = values['saved']
         if room.guest and field == 'primary':
@@ -146,10 +146,10 @@ def create_rooms_main(cmd, args):
                 room.is_swappable = False
             else:
                 if elem.ticket_id_in_secret_party == '':
-                    debug(f"Skipping roombot-placed room {room.number}, as it is marked as available in airtable", args)
+                    debug(f"Room {room.number}, placed by roombot, being skipped, as it is marked as available in airtable", args)
                     continue
 
-                cmd.stdout.write(cmd.style.WARNING(f"Roombot-placed Room {room.number} showing as empty in airtable!"))
+                cmd.stdout.write(cmd.style.WARNING(f"Room {room.number}, placed by roombot, showing as having ticket in airtable"))
 
         # the following per-guest stuff gets a bit more complex
         # TODO: Note that as we normalize names via .title() to remove chances of capitalization
@@ -159,7 +159,7 @@ def create_rooms_main(cmd, args):
         if elem.first_name_resident != '':
             primary_name = elem.first_name_resident
             if elem.last_name_resident == '':
-                cmd.stdout.write(cmd.style.WARNING(f"No last name for room {room.number}"))
+                cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} has no last name"))
             else:
                 primary_name = f"{primary_name} {elem.last_name_resident}"
 
@@ -168,31 +168,31 @@ def create_rooms_main(cmd, args):
                 if room.guest and room.guest.transfer:
                     trans_guest = room.guest.chain(room.guest.transfer)[-1]
                     if elem.ticket_id_in_secret_party == room.guest.ticket:
-                        if fuzziness >= args['fuzziness']:
-                            debug(cmd.style.SUCCESS(f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
-                                                    f" {room.primary} -> {primary_name}"), args)
-                        else:
+                        guest_fuzziness = fuzz.ratio(room.guest.name, primary_name.title())
+                        if guest_fuzziness >= args['fuzziness']:
+                            debug(cmd.style.SUCCESS(f"Updating primary name for {room.number} transfer {room.guest.transfer}"
+                                                    f" {room.primary} -> {primary_name}, as it matches associated guest name"
+                                                    f" (fuzziness{fuzziness} outside threshold of {args['fuzziness']}"), args)
                             room.primary = primary_name.title()
 
                     elif trans_guest.name == primary_name.title():
-                            cmd.stdout.write(cmd.style.WARNING(
-                                f"Not updating primary name for room {room.number} transfer {room.guest.transfer}"
-                                f" {room.primary} -> {primary_name}"))
+                        cmd.stdout.write(cmd.style.WARNING(
+                            f"Room {room.number} ignoring airtable due to transfer {room.guest.transfer}"))
+                        continue
                     else:
-                        if fuzziness <= args['fuzziness']:
+                        if fuzziness < args['fuzziness']:
                             room.primary = primary_name.title()
                         else:
-                            debug(cmd.style.SUCCESS(f"Not updating primary name for {room.number}"
-                                                    f"{room.primary}->{primary_name} ({fuzziness}"
+                            debug(cmd.style.SUCCESS(f"Room {room.number} updating primary name"
+                                                    f" {room.primary}->{primary_name} ({fuzziness}"
                                                     f" fuzziness within threshold of {args['fuzziness']}"), args)
                 else:
-                    if fuzziness <= args['fuzziness']:
+                    if fuzziness < args['fuzziness']:
                         room.primary = primary_name.title()
                     else:
                         cmd.stdout.write(cmd.style.SUCCESS(f"Not updating primary name for {room.number}"
                                                            f" {room.primary}->{primary_name} ({fuzziness}"
                                                            f" fuzziness within threshold of {args['fuzziness']}"))
-
 
             if elem.placed_by == '':
                 cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} Reserved w/o placer"))
@@ -211,12 +211,19 @@ def create_rooms_main(cmd, args):
 
         old_guest = None
         old_room = None
-        if elem.ticket_id_in_secret_party != room.sp_ticket_id:
-            if elem.ticket_id_in_secret_party and \
-               not bool(sp_ticket_pattern.fullmatch(elem.ticket_id_in_secret_party)):
-                cmd.stdout.write(cmd.style.ERROR(f"Skipping room {room.number} with invalid sp_ticket_id in airtable {elem.ticket_id_in_secret_party}"))
-                continue
 
+        # Validate sp_ticket_id format if present
+        if elem.ticket_id_in_secret_party and \
+           not bool(sp_ticket_pattern.fullmatch(elem.ticket_id_in_secret_party)):
+            cmd.stdout.write(cmd.style.ERROR(f"Skipping room {room.number} with invalid sp_ticket_id in airtable {elem.ticket_id_in_secret_party}"))
+            continue
+
+        # Always reconcile Room <-> Guest relationships when preserve mode is active
+        # This ensures consistency even when sp_ticket_id hasn't changed
+        ticket_changed = elem.ticket_id_in_secret_party != room.sp_ticket_id
+        should_reconcile = ticket_changed or (args['preserve'] and elem.ticket_id_in_secret_party)
+
+        if should_reconcile:
             # * we will not do anything if the existing guest has already logged in
             # * we clean up the guest association for the old guest, to allow them to be
             #   and expect it will get cleaned up by the next secret party import or
@@ -227,53 +234,84 @@ def create_rooms_main(cmd, args):
             #     allocated room. if it has been modified, a warning is thrown, and system
             #     checks will probably light up, and this is why room_fix command is a thing
             #   * associate the new guest record with the current room
-            if room.guest:
+
+            # Handle ticket changes: clear old guest if ticket is different
+            if ticket_changed and room.guest:
                 if room.guest.last_login:
-                    cmd.stdout.write(cmd.style.ERROR(f"Not marking occupied {room.name_hotel} {room.number} room as non placed; user has already logged in!"))
+                    cmd.stdout.write(cmd.style.ERROR(f"Room{room.number} user has already logged in! Update anyway?"))
+                    if getch() != 'y':
+                        continue
+
+                if room.guest \
+                   and room.guest.transfer \
+                   and elem.ticket_id_in_secret_party in [x.ticket for x in room.guest.chain(room.guest.transfer)]:
+                    cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} not being reconciled due to transfer {room.guest.transfer}"))
                     continue
 
                 room.guest.room_number = None
                 room.guest.hotel = None
                 old_guest = room.guest
-                if elem.ticket_id_in_secret_party:
-                    try:
-                        new_guest = Guest.objects.get(ticket=elem.ticket_id_in_secret_party)
-                        new_guest.room_number = room.number
-                        new_guest.hotel = room.name_hotel
-                        room.guest = new_guest
-                        try:
-                            old_room = Room.objects.get(sp_ticket_id=elem.ticket_id_in_secret_party)
-                            if old_room.number in processed_rooms:
-                                cmd.stdout.write(cmd.style.WARNING(f"Not able to update {new_guest.name}'s old room {old_room.number}. Please run system checks to identify potential side effects"))
+                room.guest = None
 
-                            old_room.guest = None
-                            old_room.primary = ""
-                            old_room.secondary = ""
-                            old_room.placed_by = ""
-                            old_room.swap_code = None
-                            old_room.placed_by_roombaht = True
-                            old_room.is_available = True
-                            old_room.is_swappable = True
-                            old_room.is_placed = False
-                            old_room.sp_ticket_id = None
+            if ticket_changed:
+                # Always update sp_ticket_id when it has changed
+                room.sp_ticket_id = elem.ticket_id_in_secret_party
+
+            # Associate guest with ticket to this room
+            if elem.ticket_id_in_secret_party:
+                try:
+                    new_guest = Guest.objects.get(ticket=elem.ticket_id_in_secret_party)
+
+
+                    # Clean up guest's old room if they had one
+                    if new_guest.room_number and new_guest.hotel:
+                        try:
+                            old_room = Room.objects.get(number=new_guest.room_number, name_hotel=new_guest.hotel)
+                            if old_room.number != room.number:
+                                if old_room.number in processed_rooms:
+                                    cmd.stdout.write(cmd.style.WARNING(
+                                        f"Not able to update {new_guest.name}'s old room {old_room.number}. "
+                                        f"Please run system checks to identify potential side effects"))
+                                else:
+                                    old_room.guest = None
+                                    old_room.primary = ""
+                                    old_room.secondary = ""
+                                    old_room.placed_by = ""
+                                    old_room.swap_code = None
+                                    old_room.placed_by_roombaht = True
+                                    old_room.is_available = True
+                                    old_room.is_swappable = True
+                                    old_room.is_placed = False
+                                    old_room.sp_ticket_id = None
                         except Room.DoesNotExist:
-                            # this is fine, right?
+                            # Guest had room info but room doesn't exist - will be cleaned up
                             pass
 
-                    except Guest.DoesNotExist:
-                        room.guest = None
-                else:
-                    room.guest = None
-                    room.primary = ''
-                    room.secondary = ''
-                    room.placed_by = ''
-                    room.swap_code = None
-                    room.placed_by_roombaht = True
-                    room.is_available = True
-                    room.is_swappable = True
-                    room.is_placed = False
+                    # Associate guest with this room
+                    new_guest.room_number = room.number
+                    new_guest.hotel = room.name_hotel
+                    room.guest = new_guest
 
-                room.sp_ticket_id = elem.ticket_id_in_secret_party
+                except Guest.DoesNotExist:
+                    # No guest found with this ticket - clear room guest
+                    if ticket_changed:
+                        room.guest = None
+                    else:
+                        cmd.stdout.write(cmd.style.WARNING(
+                            f"Room {room.number} has sp_ticket_id {elem.ticket_id_in_secret_party} "
+                            f"but no matching Guest found in database"))
+
+            # Clear room if ticket is now empty
+            elif ticket_changed and not elem.ticket_id_in_secret_party:
+                room.guest = None
+                room.primary = ''
+                room.secondary = ''
+                room.placed_by = ''
+                room.swap_code = None
+                room.placed_by_roombaht = True
+                room.is_available = True
+                room.is_swappable = True
+                room.is_placed = False
 
         # loaded room, check if room (and associated guest records) changed
         if room.is_dirty(check_relationship=True):
@@ -307,7 +345,7 @@ def create_rooms_main(cmd, args):
                         cmd.stdout.write(cmd.style.ERROR("Giving up on update process"))
                         sys.exit(1)
                     elif a_key != 'y':
-                        cmd.stdout.write(cmd.style.WARNING(f"Not updating {room.name_hotel} {room.number}"))
+                        cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} not being updated"))
                         continue
 
                 if args['force'] and room_update:

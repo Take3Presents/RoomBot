@@ -115,8 +115,11 @@ class GuestProcessingService:
                 transfer_room = None
                 chain = []
 
+                # either the guest record is still chilling with one room or
+                # depending on what kind of data mess we have gotten ourselves into
+                # the room has been transferred "away" but not reflected in our db
                 for chain_guest in Guest.chain(trans_code):
-                    if chain_guest.room_set.count() == 1:
+                    if chain_guest.room_set.count() == 1 or chain_guest.ticket == trans_code:
                         existing_guest = chain_guest
 
                 if not existing_guest:
@@ -124,6 +127,7 @@ class GuestProcessingService:
                     # the origial ticket. so we go through the full set of rows
                     chain = TransferChainService.transfer_chain(trans_code, guest_rows)
                     if len(chain) == 0:
+                        # and sometimes
                         logger.warning("Ticket transfer (%s) but no previous guest found", trans_code)
                         continue
 

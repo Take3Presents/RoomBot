@@ -4,7 +4,7 @@ from reservations.models import Guest
 import reservations.config as roombaht_config
 
 class Command(BaseCommand):
-    help = "Enable can_login for guests who should be able to login per guest_drama_check"
+    help = "Enable can_login for guests who should be able to login per guest_drama_check (grouped by email)"
 
     def add_arguments(self, parser):
         parser.add_argument('-n', '--dry-run', action='store_true', help='Show changes without saving')
@@ -13,15 +13,29 @@ class Command(BaseCommand):
         dry_run = bool(kwargs.get('dry_run'))
 
         candidates = []
-        for guest in Guest.objects.filter(can_login=False):
+
+        # Collect distinct, non-empty emails to consider
+        emails = Guest.objects.values_list('email', flat=True).distinct()
+        for email in emails:
+            if not email:
+                continue
+
+            group = Guest.objects.filter(email=email)
+
+            # If any member of the group looks like a visible-hotel single-room guest,
+            # then any members of that group with can_login=False should be enabled.
             try:
-                room_count = guest.room_set.count()
+                visible_single = any(
+                    (g.room_set.count() == 1 and g.hotel in roombaht_config.VISIBLE_HOTELS)
+                    for g in group
+                )
             except Exception:
                 # Be conservative if counting fails for some reason
-                room_count = 0
+                visible_single = False
 
-            if room_count == 1 and guest.hotel in roombaht_config.VISIBLE_HOTELS:
-                candidates.append(guest)
+            if visible_single:
+                for g in group.filter(can_login=False):
+                    candidates.append(g)
 
         if len(candidates) == 0:
             self.stdout.write('No guests to update')
