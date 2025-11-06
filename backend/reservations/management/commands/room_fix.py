@@ -111,13 +111,15 @@ class Command(BaseCommand):
                 candidates = Guest.objects.filter(name__iexact=selected_name)
 
             # prefer candidates in this order
-            # * if the sp ticket id matches
+            # * if the sp ticket id matches AND guest is not currently associated with a different room
             # * if there is no ticket, room number, or hotel
             preferred = None
             for c in candidates:
                 if room.sp_ticket_id and c.ticket == room.sp_ticket_id:
-                    preferred = c
-                    break
+                    # Prefer candidates not already associated, or the currently associated guest
+                    if not c.room_number or not c.hotel or c == og_guest:
+                        preferred = c
+                        break
                 elif not c.ticket or not c.room_number or not c.hotel:
                     preferred = c
                     break
