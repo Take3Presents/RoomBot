@@ -170,26 +170,57 @@ class TransferChainFixer:
                 # User already chose
                 correct_room_loc = chosen_room
             else:
-                # Find the room associated with the earliest guest in chain (closest to head)
-                # This is the "original" room that should be kept
-                earliest_idx = min(idx for loc_data in room_locations.values()
-                                 for room, idx in loc_data['rooms'])
+                # Determine which room to use:
+                # PRIORITY 1: If one room has is_placed=True, it MUST be the correct room
+                # PRIORITY 2: Otherwise, prefer room associated with HEAD guest (earliest in chain, idx=0)
+                # PRIORITY 3: If still ambiguous, prompt user
 
-                # Find which location has a room from the earliest guest
+                # First, check if ANY room has is_placed=True
+                placed_locations = []
                 for loc, loc_data in room_locations.items():
-                    if any(idx == earliest_idx for room, idx in loc_data['rooms']):
-                        correct_room_loc = loc
-                        break
+                    if any(room.is_placed for room, idx in loc_data.get('rooms', [])):
+                        placed_locations.append(loc)
 
-                # If we still have multiple locations with same earliest index, need user input
-                # Mark this as needing user choice
-                locations_at_earliest = [loc for loc, loc_data in room_locations.items()
-                                        if any(idx == earliest_idx for room, idx in loc_data['rooms'])]
-                if len(locations_at_earliest) > 1:
-                    # Need user to choose - add a special change type
-                    changes.append(('choose_room', locations_at_earliest, room_locations, {}))
-                    # Don't process further until user chooses
+                if len(placed_locations) == 1:
+                    # Exactly one is_placed=True room - this MUST be the correct one
+                    correct_room_loc = placed_locations[0]
+                elif len(placed_locations) > 1:
+                    # Multiple is_placed=True rooms - need user to choose
+                    changes.append(('choose_room', unique_locations, room_locations, {}))
                     return changes
+                else:
+                    # No is_placed=True rooms - fall back to HEAD preference
+                    # Find location associated with head (idx 0)
+                    head_locations = []
+                    for loc, loc_data in room_locations.items():
+                        # Check if this location has rooms or guest fields from head (idx 0)
+                        if any(idx == 0 for room, idx in loc_data.get('rooms', [])) or \
+                           any(idx == 0 for guest, idx in loc_data.get('guest_fields', [])):
+                            head_locations.append(loc)
+
+                    if len(head_locations) == 1:
+                        # Unambiguous: head has exactly one room
+                        correct_room_loc = head_locations[0]
+                    elif len(head_locations) > 1:
+                        # Multiple head rooms - need user choice
+                        changes.append(('choose_room', unique_locations, room_locations, {}))
+                        return changes
+                    else:
+                        # No head locations - fall back to earliest position
+                        earliest_idx = min(idx for loc_data in room_locations.values()
+                                         for room, idx in loc_data.get('rooms', []))
+
+                        earliest_locations = []
+                        for loc, loc_data in room_locations.items():
+                            if any(idx == earliest_idx for room, idx in loc_data.get('rooms', [])):
+                                earliest_locations.append(loc)
+
+                        if len(earliest_locations) == 1:
+                            correct_room_loc = earliest_locations[0]
+                        else:
+                            # Multiple at same position - need user choice
+                            changes.append(('choose_room', unique_locations, room_locations, {}))
+                            return changes
 
         # Clear intermediate guest fields
         for guest in intermediates:
@@ -423,22 +454,41 @@ class Command(BaseCommand):
                     available_locations = changes[0][1]
                     room_locations = changes[0][2]
 
+                    # Find default room: prefer is_placed=True rooms
+                    default_idx = 0
+                    for i, loc in enumerate(available_locations):
+                        loc_data = room_locations[loc]
+                        # Check if any room at this location has is_placed=True
+                        for room, idx in loc_data.get('rooms', []):
+                            if room.is_placed:
+                                default_idx = i
+                                break
+                        if default_idx == i:
+                            break
+
                     self.stdout.write(self.style.WARNING("\n⚠️  Multiple room locations found in transfer chain:"))
                     for i, loc in enumerate(available_locations, 1):
                         hotel, room_number = loc
                         # Show which guest(s) in chain have this room
                         loc_data = room_locations[loc]
                         guest_info = []
+                        is_placed_in_loc = False
                         # Show from guest_fields (original ownership) and rooms (current FK)
                         for guest, idx in loc_data.get('guest_fields', []):
                             guest_info.append(f"{guest.email} (position {idx}, guest_field)")
                         for room, idx in loc_data.get('rooms', []):
+                            if room.is_placed:
+                                is_placed_in_loc = True
                             guest_info.append(f"{chain[idx].email} (position {idx}, room_fk)")
-                        self.stdout.write(f"  {i}. {hotel} {room_number}")
+
+                        default_marker = " [DEFAULT]" if (i - 1) == default_idx else ""
+                        is_placed_marker = " [is_placed=True]" if is_placed_in_loc else ""
+                        self.stdout.write(f"  {i}. {hotel} {room_number}{default_marker}{is_placed_marker}")
                         self.stdout.write(f"     Associated with: {', '.join(guest_info)}")
 
                     self.stdout.write("  q. Quit")
-                    self.stdout.write("\nWhich room should be kept? [1-{}/q]: ".format(len(available_locations)), ending='')
+                    default_prompt = default_idx + 1
+                    self.stdout.write(f"\nWhich room should be kept? [1-{len(available_locations)}/q] (default: {default_prompt}): ", ending='')
 
                     choice = getch()
                     self.stdout.write(choice)  # Echo the choice
@@ -446,18 +496,83 @@ class Command(BaseCommand):
                     if choice.lower() == 'q':
                         self.stdout.write(self.style.WARNING("\nAborting fix_transfer_chain"))
                         return
-
-                    try:
-                        choice_idx = int(choice) - 1
-                        if 0 <= choice_idx < len(available_locations):
-                            chosen_room = available_locations[choice_idx]
-                        else:
+                    elif choice == '\r' or choice == '\n' or choice == '':
+                        # Use default
+                        chosen_room = available_locations[default_idx]
+                    else:
+                        try:
+                            choice_idx = int(choice) - 1
+                            if 0 <= choice_idx < len(available_locations):
+                                chosen_room = available_locations[choice_idx]
+                            else:
+                                raise CommandError(f"Invalid choice: {choice}")
+                        except ValueError:
                             raise CommandError(f"Invalid choice: {choice}")
-                    except ValueError:
-                        raise CommandError(f"Invalid choice: {choice}")
 
                     # Regenerate changes with chosen room
                     changes = fixer.get_changes(chain, tail, orphan_action='ask', chosen_room=chosen_room)
+
+                # Display changes (before prompting for orphan action)
+                if not changes:
+                    if self.verbosity >= 1:
+                        self.stdout.write(self.style.SUCCESS("\n  No changes needed - chain is correct!"))
+                    continue
+
+                # Check for is_placed warnings
+                has_placed_warning = any(
+                    change[0] == 'room' and len(change) > 3 and change[3].get('is_placed_warning', False)
+                    for change in changes
+                )
+
+                if has_placed_warning:
+                    self.stdout.write(self.style.WARNING("\n⚠️  WARNING: Some rooms have is_placed=True"))
+                    self.stdout.write(self.style.WARNING("   These rooms have been physically placed and may require manual intervention."))
+                    for change in changes:
+                        if change[0] == 'room' and len(change) > 3 and change[3].get('is_placed_warning', False):
+                            room = change[1]
+                            self.stdout.write(self.style.WARNING(f"   - {room.name_hotel} {room.number}"))
+
+                # Always display proposed changes if we have verbosity >= 1 OR not in dry-run/force mode
+                if self.verbosity >= 1 or (not dry_run and not force):
+                    self.stdout.write("\nProposed Changes:")
+
+                    for change in changes:
+                        change_type = change[0]
+                        metadata = change[3] if len(change) > 3 else {}
+
+                        if change_type == 'guest':
+                            guest = change[1]
+                            guest_changes = change[2]
+                            self.stdout.write(f"\n  Guest {guest.email} (ticket {guest.ticket}):")
+                            for field, (old_val, new_val) in guest_changes.items():
+                                old_display = f"'{old_val}'" if old_val is not None else 'None'
+                                new_display = f"'{new_val}'" if new_val is not None else 'None'
+                                self.stdout.write(self.style.MIGRATE_LABEL(
+                                    f"    {field}: {old_display} → {new_display}"
+                                ))
+
+                        elif change_type == 'room':
+                            room = change[1]
+                            room_changes = change[2]
+                            action = metadata.get('orphan_action', 'unknown')
+                            is_duplicate = metadata.get('is_duplicate', False)
+                            is_correct = metadata.get('is_correct_room', False)
+
+                            room_header = f"\n  Room {room.name_hotel} {room.number}:"
+                            if is_correct:
+                                room_header += self.style.SUCCESS(" [CORRECT ROOM - will be assigned to tail]")
+                            elif is_duplicate:
+                                room_header += self.style.WARNING(" [DUPLICATE - will be cleared]")
+                            if metadata.get('is_placed_warning', False):
+                                room_header += self.style.WARNING(" [is_placed=True]")
+                            self.stdout.write(room_header)
+
+                            for field, (old_val, new_val) in room_changes.items():
+                                old_display = f"'{old_val}'" if old_val is not None and old_val != '' else 'None'
+                                new_display = f"'{new_val}'" if new_val is not None and new_val != '' else 'None'
+                                self.stdout.write(self.style.MIGRATE_LABEL(
+                                    f"    {field}: {old_display} → {new_display}"
+                                ))
 
                 # Check if any rooms would become orphaned
                 has_orphan_rooms = any(
@@ -487,67 +602,6 @@ class Command(BaseCommand):
 
                     # Regenerate changes with chosen action
                     changes = fixer.get_changes(chain, tail, orphan_action=orphan_action, chosen_room=chosen_room)
-
-                # Display changes
-                if not changes:
-                    if self.verbosity >= 1:
-                        self.stdout.write(self.style.SUCCESS("\n  No changes needed - chain is correct!"))
-                    continue
-
-                # Check for is_placed warnings
-                has_placed_warning = any(
-                    change[0] == 'room' and len(change) > 3 and change[3].get('is_placed_warning', False)
-                    for change in changes
-                )
-
-                if has_placed_warning:
-                    self.stdout.write(self.style.WARNING("\n⚠️  WARNING: Some rooms have is_placed=True"))
-                    self.stdout.write(self.style.WARNING("   These rooms have been physically placed and may require manual intervention."))
-                    for change in changes:
-                        if change[0] == 'room' and len(change) > 3 and change[3].get('is_placed_warning', False):
-                            room = change[1]
-                            self.stdout.write(self.style.WARNING(f"   - {room.name_hotel} {room.number}"))
-
-                if self.verbosity >= 1:
-                    self.stdout.write("\nProposed Changes:")
-
-                for change in changes:
-                    change_type = change[0]
-                    metadata = change[3] if len(change) > 3 else {}
-
-                    if change_type == 'guest':
-                        guest = change[1]
-                        guest_changes = change[2]
-                        self.stdout.write(f"\n  Guest {guest.email} (ticket {guest.ticket}):")
-                        for field, (old_val, new_val) in guest_changes.items():
-                            old_display = f"'{old_val}'" if old_val is not None else 'None'
-                            new_display = f"'{new_val}'" if new_val is not None else 'None'
-                            self.stdout.write(self.style.MIGRATE_LABEL(
-                                f"    {field}: {old_display} → {new_display}"
-                            ))
-
-                    elif change_type == 'room':
-                        room = change[1]
-                        room_changes = change[2]
-                        action = metadata.get('orphan_action', 'unknown')
-                        is_duplicate = metadata.get('is_duplicate', False)
-                        is_correct = metadata.get('is_correct_room', False)
-
-                        room_header = f"\n  Room {room.name_hotel} {room.number}:"
-                        if is_correct:
-                            room_header += self.style.SUCCESS(" [CORRECT ROOM - will be assigned to tail]")
-                        elif is_duplicate:
-                            room_header += self.style.WARNING(" [DUPLICATE - will be cleared]")
-                        if metadata.get('is_placed_warning', False):
-                            room_header += self.style.WARNING(" [is_placed=True]")
-                        self.stdout.write(room_header)
-
-                        for field, (old_val, new_val) in room_changes.items():
-                            old_display = f"'{old_val}'" if old_val is not None and old_val != '' else 'None'
-                            new_display = f"'{new_val}'" if new_val is not None and new_val != '' else 'None'
-                            self.stdout.write(self.style.MIGRATE_LABEL(
-                                f"    {field}: {old_display} → {new_display}"
-                            ))
 
                 # Apply changes if not dry run
                 if dry_run:

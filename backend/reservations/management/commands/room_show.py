@@ -88,3 +88,4 @@ class Command(BaseCommand):
                 # guest_one was originally in room_one and moved to room_two; guest_two vice-versa
                 direction = f"{s.guest_one.name} -> {s.room_two} ; {s.guest_two.name} -> {s.room_one}"
                 self.stdout.write(f"{t}: {rooms_str} | {direction}")
+

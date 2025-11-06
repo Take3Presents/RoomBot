@@ -28,7 +28,7 @@ def guest_changes(guest):
     return msg
 
 def room_changes(room):
-    msg = f"{room.name_hotel:9}{room.number:4} changes\n"
+    msg = f"{room.name_hotel:9}{room.number:4} {room.name_hotel} changes\n"
     for field, values in room.get_dirty_fields(verbose=True, check_relationship=True).items():
         saved = values['saved']
         if room.guest and field == 'primary':
@@ -241,7 +241,9 @@ def create_rooms_main(cmd, args):
                     cmd.stdout.write(cmd.style.ERROR(f"Room{room.number} not being updated; user has already logged in!"))
                     continue
 
-                if room.guest and elem.ticket_id_in_secret_party in [x.ticket for x in room.guest.chain(room.guest.transfer)]:
+                if room.guest \
+                   and room.guest.transfer \
+                   and elem.ticket_id_in_secret_party in [x.ticket for x in room.guest.chain(room.guest.transfer)]:
                     cmd.stdout.write(cmd.style.WARNING(f"Room {room.number} not being reconciled due to transfer {room.guest.transfer}"))
                     continue
 

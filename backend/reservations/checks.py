@@ -61,11 +61,13 @@ def guest_drama_check(app_configs, **kwargs):
         # should only occur due to orm fuckery, and potentially odd airtable intake
         if guest.ticket and Guest.objects.filter(ticket=guest.ticket).count() > 1:
             errors.append(Error(f"Guest {guest.email}, ticket {guest.ticket} shared with other users",
+                                hint="If related to transfer, attempt fix_transfer_chain or manual reconciliation",
                                 obj=guest))
 
     multi_room = [','.join([str(x) for x in Guest.objects.all() if x.room_set.count() > 1])]
     if len([x for x in multi_room if len(x) > 0]) > 0:
-        errors.append(Error(f"Guest records with multiple associated rooms {multi_room}"))
+        errors.append(Error(f"Guest records with multiple associated rooms {multi_room}",
+                            hint="Attempt manual reconciliation. Good luck, starfighter."))
 
     # Check for tickets assigned to multiple room entries
     ticket_counts = {}
@@ -78,7 +80,7 @@ def guest_drama_check(app_configs, **kwargs):
     for ticket, rooms in ticket_counts.items():
         if len(rooms) > 1:
             errors.append(Error(f"Ticket {ticket} assigned to multiple rooms: {', '.join(rooms)}",
-                                hint="Manually reconcile room assignments"))
+                                hint="If related to transfer, attempt fix_transfer_chain or manual reconciliation"))
 
     # Check for tickets assigned to multiple guest entries
     for guest in guests:
@@ -86,7 +88,7 @@ def guest_drama_check(app_configs, **kwargs):
             duplicate_guests = Guest.objects.filter(ticket=guest.ticket)
             guest_list = ', '.join([f"{g.email} (id={g.id})" for g in duplicate_guests])
             errors.append(Error(f"Ticket {guest.ticket} assigned to multiple guest entries: {guest_list}",
-                                hint="Manually reconcile guest records"))
+                                hint="If related to transfer, attempt fix_transfer_chain or manual reconciliation"))
 
     return errors
 
@@ -99,11 +101,11 @@ def room_drama_check(app_configs, **kwargs):
         # on the guest record matches the actual room number
         if room.guest and room.number != room.guest.room_number:
             errors.append(Error(f"Room/guest number mismatch {room.name_hotel} {room.number} / {room.guest.email} {room.guest.hotel} {room.guest.room_number}",
-                                hint='Manually reconcile room/guest numbers', obj=room))
+                                hint='Attempt room_fix or manual reconciliation', obj=room))
 
         if room_guest_name_mismatch(room):
             errors.append(Error(f"Room/guest name mismatch {room.name_hotel} {room.number} {room.primary} / {room.guest.name}",
-                                hint='Manually reconcile room/guest names', obj=room))
+                                hint='Attempt room_fix or manual reconciliation', obj=room))
 
         # side effect of transferring placed rooms
         if room.sp_ticket_id:
@@ -113,23 +115,23 @@ def room_drama_check(app_configs, **kwargs):
                 guest = Guest.objects.get(ticket=room.sp_ticket_id)
                 if room.number != guest.room_number:
                     errors.append(Error(f"Ticket {room.sp_ticket_id} room/guest number mismatch {room.number} / {guest.room_number}",
-                                        hint='Manually reconcile room/guest numbers for specified ticket', obj=room))
+                                        hint='Attempt room_fix or manual reconcliation', obj=room))
 
                 if room_guest_name_mismatch(room):
                     errors.append(Error(f"Room {room.name_hotel} {room.number} {room.sp_ticket_id} room/guest name mismatch {room.primary} / {guest.name}",
-                                        hint='Manually reconcile room/guest names for specified ticket',
+                                        hint='Attempt room_fix or manual reconcliation',
                                         obj=room))
 
             except Guest.DoesNotExist:
                 errors.append(Error(f"Original owner of {room.name_hotel} {room.number} with ticket {room.sp_ticket_id} not found",
-                                    hint='Good luck, I guess?', obj=room))
+                                    hint='Might go away on a SP import, might not. Good luck, I guess?', obj=room))
             except MultipleObjectsReturned:
                 errors.append(Error(f"Multiple guests found with ticket {room.sp_ticket_id} for room {room.name_hotel} {room.number}",
                                     hint='Database corruption - manual reconciliation required', obj=room))
 
             if room.guest is None:
                 errors.append(Error(f"Room {room.number} ({room.name_hotel}) sp_ticket_id {room.sp_ticket_id} missing guest",
-                                    hint='Manually reconcile w/ sources of truth', obj=room))
+                                    hint='Attempt room_fix or manual reconciliation', obj=room))
 
             if room.guest is not None and room.number != room.guest.room_number \
                and room.primary != room.guest.name \
@@ -189,60 +191,32 @@ def secret_party_data_check(app_configs, **kwargs):
     for room_type, room_data in ROOM_LIST.items():
         room_products.update(room_data['rooms'])
 
-    # Set up cache directory and file (expand ~ to home directory)
-    cache_dir = Path(roombaht_config.CHECK_CACHE_DIR).expanduser()
-    cache_file = cache_dir / 'secret_party_check.json'
-    cache_max_age = timedelta(hours=1)  # Cache for 1 hour
+    # Use SecretPartyClient with cache support
+    # Initialize without API key first - will use cache if available
+    api_key = roombaht_config.SP_API_KEY if roombaht_config.SP_API_KEY else None
+    client = SecretPartyClient(api_key=api_key)
 
-    sp_data = None
+    try:
+        # Try to get data - will use cache if available, otherwise fetch from API
+        sp_data = client.export_tickets(order="last_name",
+                                        reverse=True,
+                                        search=[
+                                            {"label": "status:active"}
+                                        ])
 
-    # Try to load from cache first
-    if cache_file.exists():
-        try:
-            cache_mtime = datetime.fromtimestamp(cache_file.stat().st_mtime)
-            if datetime.now() - cache_mtime < cache_max_age:
-                with open(cache_file, 'r') as f:
-                    sp_data = json.load(f)
-        except (json.JSONDecodeError, IOError, OSError) as e:
-            errors.append(Warning(
-                f"Failed to read cache file {cache_file}: {e}",
-                hint="Cache will be refreshed from Secret Party API"
-            ))
-
-    # Fetch from API if cache miss or expired
-    if sp_data is None:
+    except Exception as e:
+        # If we have no API key and no cache, this is expected
         if not roombaht_config.SP_API_KEY:
             errors.append(Warning(
-                "SP_API_KEY not configured - skipping Secret Party data check",
+                "SP_API_KEY not configured and no cached data available",
                 hint="Set ROOMBAHT_SP_API_KEY environment variable to enable this check"
             ))
-            return errors
-
-        try:
-            client = SecretPartyClient(roombaht_config.SP_API_KEY)
-            sp_data = client.get_all_active_and_transferred_tickets()
-
-            # Write to cache
-            try:
-                cache_dir.mkdir(parents=True, exist_ok=True)
-                with open(cache_file, 'w') as f:
-                    json.dump(sp_data, f)
-                errors.append(Info(
-                    f"Secret Party data cached to {cache_file}",
-                    hint="Cache is valid for 1 hour"
-                ))
-            except Exception as cache_error:
-                errors.append(Warning(
-                    f"Failed to write cache to {cache_file}: {cache_error}",
-                    hint="Check directory permissions. Data will be re-fetched on next check."
-                ))
-
-        except Exception as e:
+        else:
             errors.append(Warning(
                 f"Failed to fetch Secret Party data: {e}",
                 hint="Check API key and network connectivity. System check will be skipped."
             ))
-            return errors
+        return errors
 
     # Process Secret Party data and compare with database
     transferred_tickets = set(Guest.objects.exclude(transfer='').exclude(transfer__isnull=True).values_list('transfer', flat=True))
