@@ -28,7 +28,7 @@ def guest_changes(guest):
     return msg
 
 def room_changes(room):
-    msg = f"{room.name_hotel:9}{room.number:4} {room.name_hotel} changes\n"
+    msg = f"{room.name_hotel:9}{room.number:4} {room.name_take3} changes\n"
     for field, values in room.get_dirty_fields(verbose=True, check_relationship=True).items():
         saved = values['saved']
         if room.guest and field == 'primary':
@@ -238,8 +238,9 @@ def create_rooms_main(cmd, args):
             # Handle ticket changes: clear old guest if ticket is different
             if ticket_changed and room.guest:
                 if room.guest.last_login:
-                    cmd.stdout.write(cmd.style.ERROR(f"Room{room.number} not being updated; user has already logged in!"))
-                    continue
+                    cmd.stdout.write(cmd.style.ERROR(f"Room{room.number} user has already logged in! Update anyway?"))
+                    if getch() != 'y':
+                        continue
 
                 if room.guest \
                    and room.guest.transfer \
