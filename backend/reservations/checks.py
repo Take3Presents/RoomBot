@@ -44,7 +44,7 @@ def guest_drama_check(app_configs, **kwargs):
         # should only trigger as side effect of orm manipulation
         if guest.jwt == '' and guest.can_login:
             errors.append(Warning(f"Guest {guest.email} has an empty jwt field!",
-                                  hint="Reset password via ux or user_edit",
+                                  hint="Have user reset password, or use user_edit",
                                   obj=guest))
 
 
@@ -55,7 +55,7 @@ def guest_drama_check(app_configs, **kwargs):
            guest.hotel in roombaht_config.VISIBLE_HOTELS \
            and not guest.can_login:
             errors.append(Warning(f"Guest {guest.email} should be able to login!",
-                                  hint="Use user_edit to fix",
+                                  hint="Use user_edit or update_logins to fix",
                                   obj=guest))
 
         # should only occur due to orm fuckery, and potentially odd airtable intake
@@ -268,13 +268,13 @@ def secret_party_data_check(app_configs, **kwargs):
                 # Check if they have a room assigned
                 if guest.room_number is None and guest.room_set.count() == 0:
                     errors.append(Error(
-                        f"Guest {guest.email} (ticket {ticket_code}) has room product '{guest_obj.product}' in Secret Party but no room assigned in database",
+                        f"(ticket {ticket_code}) has room product '{guest_obj.product}' in Secret Party but no room assigned in database",
                         hint="Room assignment may have failed during ingestion. Consider re-running ingestion or manual assignment.",
                         obj=guest
                     ))
                 elif guest.room_number is not None and guest.room_set.count() == 0:
                     errors.append(Error(
-                        f"Guest {guest.email} (ticket {ticket_code}) has room_number='{guest.room_number}' but no Room object with associated guest",
+                        f"(ticket {ticket_code}) has room_number='{guest.room_number}' but no Room object with associated guest",
                         hint="Database inconsistency - room_number is set but Room.guest is missing.",
                         obj=guest
                     ))
@@ -282,7 +282,7 @@ def secret_party_data_check(app_configs, **kwargs):
             except Guest.DoesNotExist:
                 errors.append(Warning(
                     f"Ticket {ticket_code} with room product '{guest_obj.product}' exists in Secret Party but not in database",
-                    hint="Guest may not have been ingested yet. Run ingest_secret_party command."
+                    hint="Guest may not have been ingested yet. Fetch secret party data via command or admin page."
                 ))
             except Guest.MultipleObjectsReturned:
                 errors.append(Error(

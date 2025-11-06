@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
-from reservations.models import Room
+from django.utils.timezone import localtime
+from reservations.models import Room, Swap
 import reservations.config as roombaht_config
 
 class Command(BaseCommand):
@@ -74,3 +75,16 @@ class Command(BaseCommand):
 
         if room.swap_time:
             self.stdout.write(f"Room last swapped {room.swap_time.strftime('%H:%M%p %Z on %b %d, %Y')}")
+
+        # Include any logged Swap records involving this room (both directions)
+        swaps = list(Swap.objects.filter(room_one=room)) + list(Swap.objects.filter(room_two=room))
+        if swaps:
+            # sort by creation time
+            swaps.sort(key=lambda s: s.created_at)
+            self.stdout.write('\nSwaps involving this room:')
+            for s in swaps:
+                t = localtime(s.created_at).strftime('%H:%M%p %Z on %b %d, %Y')
+                rooms_str = f"{s.room_one} <-> {s.room_two}"
+                # guest_one was originally in room_one and moved to room_two; guest_two vice-versa
+                direction = f"{s.guest_one.name} -> {s.room_two} ; {s.guest_two.name} -> {s.room_one}"
+                self.stdout.write(f"{t}: {rooms_str} | {direction}")
