@@ -1,5 +1,4 @@
 import logging
-from fuzzywuzzy import fuzz
 from ..models import Guest, Room
 from reservations.config import VISIBLE_HOTELS
 

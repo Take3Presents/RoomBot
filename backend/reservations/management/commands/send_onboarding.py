@@ -18,7 +18,7 @@ def onboarding_email(email, otp):
         'hostname': my_url(),
         'email': email,
         'otp': otp,
-        'deadline': 'Saturday, November 9th, 2024 at 5pm PST'
+        'deadline': 'Thursday, November 6th, 2025 at 10pm PST'
     }
     body_text = template.render(objz)
     send_email([email],
@@ -31,21 +31,48 @@ class Command(BaseCommand):
         parser.add_argument('-b', '--batch-size',
                             help=f"Batch size to use, defaults to {roombaht_config.ONBOARDING_BATCH}",
                             default=roombaht_config.ONBOARDING_BATCH)
+        parser.add_argument('-f', '--force', action='store_true',
+                            help='Force sending onboarding emails even if SEND_ONBOARDING is False (will log a warning)')
+        parser.add_argument('-e', '--email', action='append',
+                            help='Direct lookup email address; may be supplied multiple times')
 
     def handle(self, *args, **kwargs):
-        guest_emails = Guest.objects \
-            .filter(onboarding_sent=False,
-                    room_number__isnull=False,
-                    can_login=True) \
-            .order_by('?') \
-            .values('email') \
-            .distinct()[:int(kwargs['batch_size'])]
+        force = bool(kwargs.get('force'))
+        if force:
+            logger.warning('Force flag enabled: bypassing SEND_ONBOARDING and sending emails')
+
+        # If direct emails provided, use them instead of random selection
+        email_args = kwargs.get('email')
+        if email_args:
+            # Only include provided emails that have NO Guest with onboarding_sent=True
+            # and that meet the other selection criteria (room_number not null, can_login True)
+            guest_emails = []
+            for e in email_args:
+                any_sent = Guest.objects.filter(email=e, onboarding_sent=True).exists()
+                if any_sent:
+                    logger.debug("Skipping %s because an onboarding email has already been sent", e)
+                    continue
+                has_pending = Guest.objects.filter(email=e,
+                                                   room_number__isnull=False,
+                                                   can_login=True).exists()
+                if has_pending:
+                    guest_emails.append({'email': e})
+                else:
+                    logger.debug("Skipping %s because it doesn't meet selection criteria", e)
+        else:
+            guest_emails = Guest.objects \
+                .filter(onboarding_sent=False,
+                        room_number__isnull=False,
+                        can_login=True) \
+                .order_by('?') \
+                .values('email') \
+                .distinct()[:int(kwargs['batch_size'])]
 
         emails = []
         for guest in guest_emails:
             rooms = Room.objects \
                         .filter(is_placed=False,
-                                name_hotel='Ballys')
+                                name_hotel__in=roombaht_config.VISIBLE_HOTELS)
             if len(rooms) > 0:
                 emails.append(guest)
 
@@ -57,20 +84,31 @@ class Command(BaseCommand):
 
         for email in [x['email'] for x in emails]:
             guests = Guest.objects.filter(email = email)
-            onboarded = [x for x in guests if x.onboarding_sent]
-            if len(onboarded) == 0:
-                logger.debug("Activation email for %s has never been sent", email)
-                if not roombaht_config.SEND_ONBOARDING:
-                    logger.debug("Not actually sending onboarding email to %s", email)
-                else:
-                    onboarding_email(email, guests[0].jwt)
+            # If any guest record already has onboarding_sent True, skip sending to avoid duplicates
+            already_onboarded = any(x.onboarding_sent for x in guests)
+            if already_onboarded:
+                logger.debug("Skipping %s because onboarding has already been sent for this email", email)
+                continue
 
-            not_onboarded = [x for x in guests if not x.onboarding_sent]
-            if len(not_onboarded) > 0:
-                logger.debug("Updating onboarding_sent for %s guest records for %s",
-                             len(not_onboarded), email)
-                for guest in not_onboarded:
-                    guest.onboarding_sent = True
-                    guest.save()
+            # At this point none of the guest records for this email have onboarding_sent True
+            logger.debug("Activation email for %s has never been sent", email)
+            sent_this_email = False
+            if not roombaht_config.SEND_ONBOARDING and not force:
+                logger.debug("Not actually sending onboarding email to %s", email)
+            else:
+                if force and not roombaht_config.SEND_ONBOARDING:
+                    # additional per-email warning to highlight bypass
+                    logger.warning("Force flag used; sending onboarding email to %s despite SEND_ONBOARDING=False", email)
+                onboarding_email(email, guests[0].jwt)
+                sent_this_email = True
+
+            if sent_this_email:
+                not_onboarded = [x for x in guests if not x.onboarding_sent]
+                if len(not_onboarded) > 0:
+                    logger.debug("Updating onboarding_sent for %s guest records for %s",
+                                 len(not_onboarded), email)
+                    for guest in not_onboarded:
+                        guest.onboarding_sent = True
+                        guest.save()
 
             time.sleep(randint(2, 5))

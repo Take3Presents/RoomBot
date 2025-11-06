@@ -47,6 +47,12 @@ def validate_room_params(data):
 
     return hotel, number
 
+
+def swap_error(msg, status=status.HTTP_400_BAD_REQUEST):
+    logger.warning(f"Swap Error: {msg}")
+    return Response({"error": msg}, status=status)
+
+
 @api_view(['POST'])
 def my_rooms(request):
     if request.method == 'POST':
@@ -127,16 +133,16 @@ def room_list(request):
         for room in data['rooms']:
             try:
                 if(len(room['number'])==3):
-                    room["floorplans"]=FLOORPLANS[int(room["number"][:1])]
+                    room["floorplans"]=FLOORPLANS[room['name_hotel'].lower()][int(room["number"][:1])]
                 elif(len(room['number'])==4):
-                    room["floorplans"]=FLOORPLANS[int(room["number"][:2])]
+                    room["floorplans"]=FLOORPLANS[room['name_hotel'].lower()][int(room["number"][:2])]
             except KeyError:
                 logger.warning(f"no floor plan found for {room['name_hotel']} / {room['number']}")
 
             if roombaht_config.SWAPS_ENABLED and room['name_take3'] in room_types:
-                room['available']=True
+                room['available'] = True
             else:
-                room['available']=False
+                room['available'] = False
 
         if 'party' in roombaht_config.FEATURES:
             party_rooms = [x.room_number for x in Party.objects.all()]
@@ -161,8 +167,8 @@ def swap_request(request):
         data = request.data
 
         if not roombaht_config.SWAPS_ENABLED:
-            return Response("Room swaps are not currently enabled",
-                            status=status.HTTP_501_NOT_IMPLEMENTED)
+            return swap_error("Room swaps are not currently enabled",
+                              status=status.HTTP_501_NOT_IMPLEMENTED)
 
         # Validate room parameters
         result = validate_room_params(data)
@@ -173,10 +179,10 @@ def swap_request(request):
         # Validate contact_info
         msg = data.get("contact_info")
         if not msg:
-            return Response({"error": "Contact info is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return swap_error("Contact info is required")
 
         if name_hotel not in roombaht_config.GUEST_HOTELS:
-            return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
+            return swap_error("Room not found", status=status.HTTP_404_NOT_FOUND)
 
         requester_room_numbers = [x.room_number
                                   for x in Guest.objects.filter(email=requester_email,
@@ -187,16 +193,13 @@ def swap_request(request):
         try:
             swap_room = Room.objects.get(number=room_num, name_hotel=name_hotel)
         except Room.DoesNotExist:
-            return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
+            return swap_error("Room not found", status.HTTP_404_NOT_FOUND)
 
         if not swap_room.swappable():
-            return Response(f"Room {swap_room} is not swappable",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Room {swap_room} is not swappable")
 
         if swap_room.cooldown():
-            return Response(f"Room {swap_room} was swapped too recently",
-                            status=status.HTTP_400_BAD_REQUEST)
-
+            return swap_error(f"Room {swap_room} was swapped too recently")
 
         requester_swappable = []
         for room_number in requester_room_numbers:
@@ -206,13 +209,13 @@ def swap_request(request):
                 if room.name_take3 == swap_room.name_take3 and room.swappable():
                     requester_swappable.append(room_number)
             except Room.DoesNotExist:
-                logger.warning("Guest %s has non existent room %s!",
-                               requester_email, room_number)
+                logger.error("Guest %s has non existent room %s!",
+                             requester_email, room_number)
                 continue
 
         if len(requester_swappable) == 0:
-            return Response(f"Requester {requester_email} has no swappable rooms for {room_num}",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Requester {requester_email} has no swappable rooms for {room_num}",
+                              status.HTTP_400_BAD_REQUEST)
 
         logger.info("[+] Sending swap req from %s to %s with msg: %s",
                     requester_email,
@@ -224,6 +227,7 @@ def swap_request(request):
             'contact_message': msg,
             'room_list': requester_swappable
         }
+
         jenv = Environment(loader=PackageLoader('reservations'))
         template = jenv.get_template('swap.j2')
         body_text = template.render(objz)
@@ -234,8 +238,8 @@ def swap_request(request):
             return Response("Request sent! They will respond if interested.",
                             status=status.HTTP_201_CREATED)
         else:
-            return Response("Unable to send email, please try again later",
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return swap_error("Unable to send email, please try again later",
+                              status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -266,30 +270,26 @@ def swap_gen(request):
             guest_instances = Guest.objects.filter(email=email)
             guest_id = guest_instances[0].id
         except IndexError as e:
-            return Response("No guest found", status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"No guest found for room {hotel} {room_num}")
 
         room = Room.objects.get(number=room_num, name_hotel=hotel)
 
         if not room.swappable():
-            return Response(f"Room {room.number} is not swappable",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Room {hotel} {room_num} is not swappable")
 
         if room.guest.id not in [x.id for x in guest_instances]:
-            return Response(f"Naughty. Room {room.number} is not your room",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Naughty. Room {hotel} {room_num} is not your room")
 
         if room.cooldown():
-            return Response(f"Room {room.number} was swapped too recently",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Room {hotel} {room_num} was swapped too recently")
 
         phrase=phrasing()
         room.swap_code=phrase
         room.swap_code_time=make_aware(datetime.datetime.utcnow())
         room.save()
 
-        logger.info(f"[+] Swap phrase generated {phrase}")
+        logger.debug(f"[+] Swap phrase generated {phrase}")
         return Response({"swap_phrase": phrase})
-
 
 @api_view(['POST'])
 def swap_it_up(request):
@@ -314,18 +314,17 @@ def swap_it_up(request):
         # Validate swap_code
         swap_req = data.get("swap_code")
         if not swap_req:
-            return Response({"error": "Swap code is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return swap_error("Swap code is required")
 
         if hotel not in roombaht_config.VISIBLE_HOTELS:
-            return Response("Room not found", status=status.HTTP_404_NOT_FOUND)
+            return swap_error("Room not in a swappable hotel", status.HTTP_404_NOT_FOUND)
 
-        logger.info(f"[+] Swap attempt {data}")
+        logger.info(f"[+] Swap attempt {hotel} {room_num}")
         try:
             guest_instances = Guest.objects.filter(email=email)
             guest_id = guest_instances[0].id
         except IndexError as e:
-            logger.warning(f"[+] No guest found")
-            return Response("No guest found", status=status.HTTP_400_BAD_REQUEST)
+            return swap_error("No guest found")
 
         rooms_swap_match = Room.objects.filter(swap_code=swap_req, name_hotel__in=roombaht_config.GUEST_HOTELS)
         swap_room_mine = Room.objects.filter(number=room_num, name_hotel=hotel)[0]
@@ -333,28 +332,24 @@ def swap_it_up(request):
         try:
             swap_room_theirs = rooms_swap_match[0]
         except IndexError as e:
-            logger.warning("[-] No room matching code")
-            return Response("No room matching that code", status=status.HTTP_400_BAD_REQUEST)
+            return swap_error("No room matching code")
 
         exp_delta = datetime.timedelta(seconds=roombaht_config.SWAP_CODE_LIFE)
         expiration = swap_room_theirs.swap_code_time + exp_delta
 
         if (expiration.timestamp() < make_aware(datetime.datetime.utcnow()).timestamp()):
-            logger.warning("[-] Expired swap code")
-            return Response("Expired code", status=status.HTTP_400_BAD_REQUEST)
+            return swap_error("Expired code")
 
         if swap_room_mine.cooldown():
-            return Response(f"Room {swap_room_mine.number} was swapped too recently",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Room {swap_room_mine.number} was swapped too recently")
 
         if swap_room_theirs.cooldown():
-            return Response(f"Room {swap_room_theirs.number} was swapped too recently",
-                            status=status.HTTP_400_BAD_REQUEST)
+            return swap_error(f"Room {swap_room_theirs.number} was swapped too recently")
 
         try:
             Room.swap(swap_room_theirs, swap_room_mine)
         except SwapError:
-            return Response("Unable to swap rooms", status=status.HTTP_400_BAD_REQUEST)
+            return swap_error("Unable to swap rooms")
 
         logger.info(f"[+] Weve got a SWAPPA!!! {swap_room_theirs} {swap_room_mine}")
 

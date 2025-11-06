@@ -55,9 +55,20 @@ class Command(BaseCommand):
         if len(rooms) == 0:
             rooms = 'none'
 
-        tickets = ','.join([x.ticket for x in guest_entries if x.ticket])
-        if len(tickets) == 0:
-            tickets = 'none'
+        tickets = []
+        for guest_entry in guest_entries:
+            if not guest_entry.ticket:
+                continue
+
+            tix_s = f"{guest_entry.ticket}"
+            if guest_entry.transfer:
+                tix_s = f"{tix_s} [from {guest_entry.transfer}]"
+
+            tickets.append(tix_s)
+
+        ticket_msg = ','.join(tickets)
+        if len(ticket_msg) == 0:
+            ticket_msg = 'none'
 
         adult = ''
         try:
@@ -70,5 +81,6 @@ class Command(BaseCommand):
         except Staff.DoesNotExist:
             pass
 
-        self.stdout.write(f"User {guest.name},{adult} otp: {guest.jwt} - can login: {guest.can_login}, last login: {last_login}")
-        self.stdout.write(f"    rooms: {rooms}, tickets: {tickets}, onboarding sent: {onboarding}")
+        self.stdout.write(f"User {guest.name},{adult} {guest.email} {guest_entries.count()} records")
+        self.stdout.write(f"    otp: {guest.jwt} - can login: {guest.can_login}, last login: {last_login}")
+        self.stdout.write(f"    rooms: {rooms}, tickets: {ticket_msg}, onboarding sent: {onboarding}")

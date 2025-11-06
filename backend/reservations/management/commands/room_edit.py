@@ -91,7 +91,7 @@ class Command(BaseCommand):
         room = None
         try:
             room = Room.objects.get(number=kwargs['number'], name_hotel=hotel)
-        except Room.ObjectNotFound as exp:
+        except Room.DoesNotExist as exp:
             raise CommandError(f"Room {kwargs['number']} not found") from exp
 
         if kwargs['unassign']:

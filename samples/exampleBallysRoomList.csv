@@ -8,16 +8,16 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 303,King,Lakeview,,,,,,,,True,Ballys-K
 304,Queen,ADA,,,,,,,,True,Ballys-2Q
 # Simple placed room w/o check-in/check-out
-305,Queen,,Foo,Bar,,,,Foo Placer,aaa001,False,Ballys-2Q
+305,Queen,,Foo,Bar,,,,Foo Placer,AAA001,False,Ballys-2Q
 # Simple placed room with check-in/check-out
-306,Queen,,Foo,Baz,,Fri 11/10,Mon 11/13,Foo Placer,aaa002,False,Ballys-2Q
+306,Queen,,Foo,Baz,,Fri 11/10,Mon 11/13,Foo Placer,AAA002,False,Ballys-2Q
 # two generic art rooms
-307,King,,Foo,Baa,Foos Friend,Wed 11/08,Mon 11/13,Foo Placer,aaa005,False,Ballys-K
-308,King,,Foo,Bac,,Fri 11/10,Mon 11/13,Foo Placer,aaa006,False,Ballys-K
+307,King,,Foo,Baa,Foos Friend,Wed 11/08,Mon 11/13,Foo Placer,AAA005,False,Ballys-K
+308,King,,Foo,Bac,,Fri 11/10,Mon 11/13,Foo Placer,AAA006,False,Ballys-K
 # transferred art room original ticket placed
-309,King,,Foo,Bab,,,,Foo Placer,aaa007,False,Ballys-K
+309,King,,Foo,Bab,,,,Foo Placer,AAA007,False,Ballys-K
 # transferred art room transferred ticket placed
-310,Queen,,Foo,Bal,,,,Foo Placer,aaa010,False,Ballys-2Q
+310,Queen,,Foo,Bal,,,,Foo Placer,AAA010,False,Ballys-2Q
 # comp'd room
 311,Queen,Smoking,Staff,Staffy,Staffys Friend,Wed 11/08,Mon 11/13,Foo Placer,,False,Ballys-2Q
 #more free rooms
@@ -26,14 +26,14 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 402,Queen,,,,,,,,,True,Ballys-2Q
 403,Queen,,,,,,,,,True,Ballys-2Q
 404,King,,,,,,,,,True,Ballys-K
-405,Queen,,Foo,Kar,,,,Foo Placer,aaa016,False,Ballys-2Q
+405,Queen,,Foo,Kar,,,,Foo Placer,AAA016,False,Ballys-2Q
 # placed room that will be transfered twice
-406,Queen,,Fob,TxBar,,,,Foo Placer,aaa020,False,Ballys-2Q
+406,Queen,,Fob,TxBar,,,,Foo Placer,AAA020,False,Ballys-2Q
 # batch of rooms for a special person
 407,Queen,,Rock,Lobster,,,,Foo Placer,,False,Ballys-2Q
 408,King,,Rock,Lobster,,,,Foo Placer,,False,Ballys-K
 409,Dungeon,,Rock,Lobster,Rock Buddy,,,Foo Placer,,False,Ballys-UNKNOWN
-410,King,,Rock,Lobster,,,,Foo Placer,aaa023,False,Ballys-K
+410,King,,Rock,Lobster,,,,Foo Placer,AAA023,False,Ballys-K
 # more free rooms
 411,Queen,,,,,,,,,True,Ballys-2Q
 412,King,,,,,,,,,True,Ballys-K
@@ -42,3 +42,7 @@ Room,Room Type,"Room Features (Accessibility, Lakeview, Smoking)",First Name (Re
 415,Queen,,,,,,,,,True,Ballys-2Q
 416,King,,,,,,,,,True,Ballys-K
 417,Queen,,,,,,,,,True,Ballys-2Q
+# room will be transferred between sp updates
+1000,King,,Rock,Lobster,,,,Foo Placer,AAA026,False,Ballys-K
+# room will be bought during incremental
+1001,King,,Marble,Lobster,,,,Foo Placer,HHA013,False,Ballys-K

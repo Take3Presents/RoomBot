@@ -22,7 +22,7 @@ class UnknownProductError(Exception):
         self.product = product
         super().__init__(f"Unknown product: {product}")
 
-class Guest(models.Model):
+class Guest(DirtyFieldsMixin, models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField("Name", max_length=240)
@@ -41,6 +41,7 @@ class Guest(models.Model):
     def chain(trans_code, guest_chain=None):
         if guest_chain is None:
             guest_chain = []
+
         try:
             existing_guest = Guest.objects.get(ticket=trans_code)
         except Guest.DoesNotExist:
@@ -98,6 +99,9 @@ class Room(DirtyFieldsMixin, models.Model):
     @property
     def check_out(self):
         return self._check_out
+
+    def occupants(self):
+        return [self.primary] + [x.strip() for x in self.secondary.split(',') if x]
 
     @check_out.setter
     def check_out(self, value):
@@ -237,7 +241,8 @@ class Room(DirtyFieldsMixin, models.Model):
     @staticmethod
     @transaction.atomic
     def swap(room_one, room_two):
-        if room_two.name_take3 != room_two.name_take3:
+        if room_two.name_take3 != room_one.name_take3 or \
+           room_two.name_hotel != room_one.name_hotel:
             logger.warning("Attempt to swap mismatched room types %s (%s) - %s (%s)",
                            room_one.number, room_one.name_take3,
                            room_two.number, room_two.name_take3)

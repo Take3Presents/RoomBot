@@ -1,3 +1,4 @@
+---
 services:
   backend:
     build:
@@ -11,18 +12,7 @@ services:
       - docker-dev.env
     depends_on:
       - db
-  backend-test:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    volumes:
-      - ./backend:/usr/src/app
-    # The backend-test service runs tests inside itself so it
-    # does not need to expose any ports
-    env_file:
-      - docker-test.env
-    depends_on:
-      - db
+
   frontend:
     build:
       context: ./frontend
@@ -34,8 +24,9 @@ services:
     command: /app/scripts/entrypoint-compose.sh
     depends_on:
       - backend
+
   db:
-    image: postgres:16.4-alpine3.20
+    image: postgres:16
     ports:
       - 5432:5432
     volumes:

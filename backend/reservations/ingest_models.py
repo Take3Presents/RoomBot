@@ -36,14 +36,15 @@ class SecretPartyGuestIngest(BaseModel):
             last_name=last_name,
             first_name=first_name,
             email=json_data.get('email', ''),
-            product=json_data.get('product'),
-            transferred_from_code=json_data.get('transferred_from'),
+            product=json_data.get('product', {}).get('name'),
+            transferred_from_code=json_data.get('transferred_from', {}).get('code', ''),
             type=json_data.get('type')
         )
 
     @classmethod
     def _from_csv(cls, csv_data: Dict[str, Any]) -> 'SecretPartyGuestIngest':
         return cls(**csv_data)
+
 
 class RoomPlacementListIngest(BaseModel):
     """Expected fields in the room spreadsheet
