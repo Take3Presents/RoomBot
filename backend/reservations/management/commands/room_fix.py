@@ -32,7 +32,7 @@ class Command(BaseCommand):
         except Room.DoesNotExist as exp:
             raise CommandError(f"Room {kwargs['number']} not found in {kwargs['hotel_name']}") from exp
 
-        if room_guest_name_mismatch(room):
+        if room.guest and room_guest_name_mismatch(room):
             self.stdout.write(f"Guest {room.guest.name} not found in room occupants")
 
             occupants = room.occupants()
