@@ -41,6 +41,7 @@ class Guest(DirtyFieldsMixin, models.Model):
     def chain(trans_code, guest_chain=None):
         if guest_chain is None:
             guest_chain = []
+
         try:
             existing_guest = Guest.objects.get(ticket=trans_code)
         except Guest.DoesNotExist:

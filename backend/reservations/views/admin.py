@@ -19,7 +19,7 @@ import reservations.config as roombaht_config
 from reservations.auth import authenticate_admin, unauthenticated
 from reservations.services.guest_validation_service import GuestValidationService
 from reservations.services.guest_ingestion_service import GuestIngestionService
-from django.db.models import Count, Max, Case, When, IntegerField, Q
+from reservations.metrics import get_all_metrics
 
 logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
 logger = logging.getLogger('ViewLogger_admin')
@@ -99,97 +99,7 @@ def request_metrics(request):
         if not auth_obj or 'email' not in auth_obj or not auth_obj['admin']:
             return unauthenticated()
 
-        rooooms = Room.objects.all()
-        guessssts = Guest.objects.all()
-
-        guest_unique = len(set([guest.email for guest in guessssts]))
-        guest_count = Guest.objects.all().count()
-        guest_unplaced = len(guessssts.filter(room=None, ticket__isnull=True))
-
-        rooms_count = rooooms.count()
-        rooms_occupied = rooooms.exclude(is_available=True).count()
-        rooms_swappable = rooooms.exclude(is_swappable=False).count()
-        # rooms available: has not yet been placed, roombaht or other
-        rooms_available = rooooms.exclude(is_available=False).count()
-        # rooms placed by roombot: rooms available to be placed by
-        rooms_placed_by_roombot = rooooms.exclude(placed_by_roombot=False).count()
-        rooms_placed_manually = rooooms.exclude(placed_by_roombot=True).count()
-        rooms_swap_code_count = rooooms.filter(swap_code__isnull=False).count()
-
-        if(rooms_occupied!=0 and rooms_count!=0):
-            percent_placed = round(float(rooms_occupied) / float(rooms_count) * 100, 2)
-        else:
-            percent_placed = 0
-
-        room_metrics = []
-        for room_type in ROOM_LIST.keys():
-            room_total = rooooms.filter(name_take3=room_type).count()
-            if room_total > 0:
-                room_metrics.append({
-                    "room_type": f"{ROOM_LIST[room_type]['hotel']} - {room_type}",
-                    "total": room_total,
-                    "unoccupied": rooooms.filter(name_take3=room_type, is_available=True).count()
-                })
-
-        # Exclude blank/null emails from per-email metrics. Log and discard any such records.
-        blank_email_q = Q(email='') | Q(email__isnull=True)
-        blank_count = Guest.objects.filter(blank_email_q).count()
-        if blank_count > 0:
-            # Log a warning and include a small sample of affected guest ids for debugging
-            sample_ids = list(Guest.objects.filter(blank_email_q).values_list('id', flat=True)[:10])
-            logger.warning("Found %d guest records with blank or null email; excluding them from per-email metrics. Sample ids: %s",
-                           blank_count, ','.join([str(x) for x in sample_ids]))
-
-        # per-email (deduplicated) metrics using OR semantics: an email-group is True if any
-        # record with that email has the flag/field. We use annotate + Max(Case(...)) to push
-        # the aggregation to the DB. Exclude blank/null emails from grouping.
-        email_qs = Guest.objects.exclude(blank_email_q)
-
-        email_groups = email_qs.values('email').annotate(
-            onboarding_sent=Max(Case(When(onboarding_sent=True, then=1), default=0, output_field=IntegerField())),
-            can_login=Max(Case(When(can_login=True, then=1), default=0, output_field=IntegerField())),
-            has_room=Max(Case(When(room__isnull=False, then=1), default=0, output_field=IntegerField())),
-            has_ticket=Max(Case(When(Q(ticket__isnull=False) & ~Q(ticket=''), then=1), default=0, output_field=IntegerField())),
-        )
-
-        unique_emails_count = email_groups.count()
-
-        # eligible: only email-groups where they can login AND have rooms
-        eligible_groups = email_groups.filter(can_login=1, has_room=1)
-        eligible_count = eligible_groups.count()
-
-        # onboarding metrics computed only among eligible email groups
-        onboarding_sent_emails = eligible_groups.filter(onboarding_sent=1).count()
-        onboarding_pending_emails = eligible_count - onboarding_sent_emails
-
-        # other per-email metrics (not restricted to eligible set)
-        can_login_emails = email_groups.filter(can_login=1).count()
-        users_with_rooms = email_groups.filter(has_room=1).count()
-        known_tickets = email_groups.filter(has_ticket=1).count()
-
-        metrics = {"guest_count": guest_count,
-                   "guest_unique": guest_unique,
-                   "guest_unplaced": guest_unplaced,
-                   "rooms_count": rooms_count,
-                   "rooms_occupied": rooms_occupied,
-                   "rooms_swappable": rooms_swappable,
-                   "rooms_available": rooms_available,
-                   "rooms_placed_by_roombot": rooms_placed_by_roombot,
-                   "rooms_placed_manually": rooms_placed_manually,
-                   "percent_placed": int(percent_placed),
-                   "rooms_swap_code_count": rooms_swap_code_count,
-                   "rooms_swap_success_count": diff_swaps_count(),
-                   "rooms": room_metrics,
-                   "version": roombaht_config.VERSION.rstrip(),
-
-                   # new deduplicated (per-email) guest metrics
-                   # onboarding_* are computed only for eligible email groups (can_login && users_with_rooms)
-                   "onboarding_sent_emails": onboarding_sent_emails,
-                   "onboarding_pending_emails": onboarding_pending_emails,
-                   "can_login_emails": can_login_emails,
-                   "users_with_rooms": users_with_rooms,
-                   "known_tickets": known_tickets,
-                   }
+        metrics = get_all_metrics()
 
         return Response(metrics, status=status.HTTP_201_CREATED)
 

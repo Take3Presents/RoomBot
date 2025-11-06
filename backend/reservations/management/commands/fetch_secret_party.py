@@ -17,6 +17,12 @@ class Command(BaseCommand):
             action='store_true',
             help='Preview what would be done without making any changes',
         )
+        parser.add_argument(
+            '--no-cache',
+            action='store_true',
+            dest='no_cache',
+            help='Bypass cached ticket export and force fresh fetch from Secret Party API',
+        )
 
     def setup_logging(self):
         logger = logging.getLogger()
@@ -58,8 +64,9 @@ class Command(BaseCommand):
             # Fetch all active and transferred tickets (default)
             self.stdout.write("Fetching all active and transferred tickets...")
             tickets = client.get_all_active_and_transferred_tickets(
-                order=options['order'],
-                reverse=options['reverse']
+                order=options.get('order'),
+                reverse=options.get('reverse'),
+                force=options.get('no_cache', False)
             )
 
             return tickets

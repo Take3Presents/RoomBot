@@ -32,23 +32,29 @@ class Command(BaseCommand):
         except Room.DoesNotExist as exp:
             raise CommandError(f"Room {kwargs['number']} not found in {kwargs['hotel_name']}") from exp
 
-        if room_guest_name_mismatch(room):
-            self.stdout.write(f"Guest {room.guest.name} not found in room occupants")
+        if (room.guest and room_guest_name_mismatch(room)) or (not room.guest):
+            if room.guest:
+                self.stdout.write(f"Guest {room.guest.name} not found in room occupants")
+            else:
+                self.stdout.write("No guest associated with this room")
 
             occupants = room.occupants()
             matched_any = False
 
             max_fuzz = 0
+            base_name = room.guest.name if room.guest else ''
             # First try to fuzz match as before
             for name in occupants:
-                fuzziness = fuzz.ratio(room.guest.name, name)
+                fuzziness = fuzz.ratio(base_name, name)
                 if fuzziness >= kwargs['fuzziness']:
                     matched_any = True
-                    guest_entries = Guest.objects.filter(email=room.guest.email)
-                    self.stdout.write(self.style.SUCCESS(f"Updating guest {guest_entries.count()} record(s) with {fuzziness} fuzzy match {name}"))
-                    for guest in guest_entries:
-                        guest.name = name
-                        guest.save()
+                    # Only update existing guest records if we have an original guest to base them on
+                    if room.guest:
+                        guest_entries = Guest.objects.filter(email=room.guest.email)
+                        self.stdout.write(self.style.SUCCESS(f"Updating guest {guest_entries.count()} record(s) with {fuzziness} fuzzy match {name}"))
+                        for guest in guest_entries:
+                            guest.name = name
+                            guest.save()
 
                 if fuzziness > max_fuzz:
                     max_fuzz = fuzziness
@@ -57,9 +63,27 @@ class Command(BaseCommand):
                 return
 
             # No fuzzy matches: present a numbered list and a quit option
-            self.stdout.write(f"No fuzzy matches found (max {max_fuzz}. Please select the correct occupant to associate with this room:")
-            for idx, name in enumerate(occupants, start=1):
-                self.stdout.write(f"{idx}. {name}")
+            self.stdout.write(f"No fuzzy matches found (max {max_fuzz}). Please select the correct occupant to associate with this room:")
+
+            # Build options: show occupants, and include the currently associated guest as an option if not present
+            options = []  # list of (display, real_name)
+            for name in occupants:
+                options.append((name, name))
+
+            associated_name = room.guest.name if hasattr(room, 'guest') and room.guest else None
+            if associated_name and associated_name not in occupants:
+                associated_ticket = getattr(room.guest, 'ticket', None)
+                if not associated_ticket:
+                    # fallback to the room's sp_ticket_id if guest.ticket is not set
+                    associated_ticket = room.sp_ticket_id
+                if associated_ticket:
+                    display = f"{associated_name} (associated, ticket {associated_ticket})"
+                else:
+                    display = f"{associated_name} (associated)"
+                options.append((display, associated_name))
+
+            for idx, (display, _) in enumerate(options, start=1):
+                self.stdout.write(f"{idx}. {display}")
             self.stdout.write("q. Quit")
 
             self.stdout.write("Select occupant number or 'q' to quit")
@@ -70,12 +94,12 @@ class Command(BaseCommand):
 
             try:
                 sel_idx = int(choice) - 1
-                if sel_idx < 0 or sel_idx >= len(occupants):
+                if sel_idx < 0 or sel_idx >= len(options):
                     raise ValueError()
             except ValueError:
                 raise CommandError("Invalid selection")
 
-            selected_name = occupants[sel_idx]
+            selected_name = options[sel_idx][1]
 
             # Attempt to find an existing guest record per rules
             og_guest = room.guest
@@ -87,13 +111,15 @@ class Command(BaseCommand):
                 candidates = Guest.objects.filter(name__iexact=selected_name)
 
             # prefer candidates in this order
-            # * if the sp ticket id matches
+            # * if the sp ticket id matches AND guest is not currently associated with a different room
             # * if there is no ticket, room number, or hotel
             preferred = None
             for c in candidates:
                 if room.sp_ticket_id and c.ticket == room.sp_ticket_id:
-                    preferred = c
-                    break
+                    # Prefer candidates not already associated, or the currently associated guest
+                    if not c.room_number or not c.hotel or c == og_guest:
+                        preferred = c
+                        break
                 elif not c.ticket or not c.room_number or not c.hotel:
                     preferred = c
                     break
@@ -112,10 +138,12 @@ class Command(BaseCommand):
                 # Create a new guest record if we couldn't find a suitable candidate
                 email = og_guest.email if og_guest and hasattr(og_guest, 'email') else ''
                 ticket = room.sp_ticket_id or ''
+                # If we have any candidates, use their jwt for continuity; otherwise jwt will be empty if not available
+                jwt_val = candidates[0].jwt if candidates else ''
                 guest = Guest(name=selected_name,
                               email=email,
                               ticket=ticket,
-                              jwt=candidates[0].jwt,
+                              jwt=jwt_val,
                               room_number=room.number,
                               hotel=room.name_hotel)
                 if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
