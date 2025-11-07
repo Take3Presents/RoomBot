@@ -163,7 +163,7 @@ def secret_party_refunded_check(app_configs, **kwargs):
                 if has_room_number or has_room_obj:
                     errors.append(Error(
                         f"Refunded ticket {ticket_code} still has a room assigned (room_number='{guest.room_number}')",
-                        hint="Consdier using user_fix to unassign room",
+                        hint="Consider using user_fix to unassign room",
                         obj=guest
                     ))
 
