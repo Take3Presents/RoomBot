@@ -67,6 +67,16 @@ class Command(BaseCommand):
                             default=False,
                             action='store_true')
 
+        parser.add_argument('--available',
+                            help='Marks a room as available',
+                            default=False,
+                            action='store_true')
+
+        parser.add_argument('--not-available',
+                            help='Marks a room as not available',
+                            default=False,
+                            action='store_true')
+
         parser.add_argument('--unassign',
                             help='Unassign the room. Annoying to undo',
                             default=False,
@@ -83,6 +93,9 @@ class Command(BaseCommand):
 
         if kwargs['swappable'] and kwargs['not_swappable']:
             raise CommandError("Cannot specify both --swappable and --not-swappable")
+
+        if kwargs['available'] and kwargs['not_available']:
+            raise CommandError("Cannot specify both --available and --not-available")
 
         hotel = kwargs['hotel_name'].title()
         if hotel not in roombaht_config.GUEST_HOTELS:
@@ -154,6 +167,11 @@ class Command(BaseCommand):
             room.placed_by_roombot = True
         elif kwargs['not_roombaht'] and room.placed_by_roombot:
             room.placed_by_roombot = False
+
+        if kwargs['available'] and not room.is_available:
+            room.is_available = True
+        elif kwargs['not_available'] and room.is_available:
+            room.is_available = False
 
         if kwargs['reset_swap']:
             room.swap_time = None

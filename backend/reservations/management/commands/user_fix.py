@@ -33,11 +33,46 @@ class Command(BaseCommand):
         dry_run = kwargs['dry_run']
         force = kwargs['force']
 
+        # Expose dry_run/force to instance methods so validation can access them
+        self.dry_run = dry_run
+        self.force = force
+
         # Step 1: Lookup guest
         guest = self._lookup_guest(search, search_by_ticket)
 
+        # If the ticket is refunded, unassign rooms automatically (outside dry-run)
+        try:
+            refunded = self._is_ticket_refunded(guest.ticket)
+        except Exception as e:
+            # If refund check fails, log and continue with normal flow
+            logger.warning(f"Failed to check refund status for ticket {guest.ticket}: {e}")
+            refunded = False
+
+        if refunded:
+            if dry_run:
+                self.stdout.write(self.style.WARNING("Ticket appears refunded. In non-dry-run mode this command will unassign any rooms associated with refunded tickets."))
+                self.stdout.write(self.style.WARNING("Dry-run mode - no changes applied"))
+                return
+
+            # Auto-unassign without further validation/confirmation
+            self.stdout.write(self.style.WARNING(f"Ticket {guest.ticket} appears refunded. Unassigning rooms for {guest.email}..."))
+            self._unassign_refunded_guest(guest)
+            self.stdout.write(self.style.SUCCESS(f"Unassigned rooms for refunded guest {guest.email} (ticket {guest.ticket})"))
+            logger.info(f"user_fix: Unassigned rooms for refunded guest {guest.email} (ticket {guest.ticket})")
+            return
+
         # Step 2: Validate guest eligibility
         self._validate_guest_eligibility(guest)
+
+        # If validation triggered an automatic unassign for a refunded guest, stop here
+        if getattr(self, '_auto_unassigned', False):
+            self.stdout.write(self.style.SUCCESS(f"Unassigned rooms for refunded guest {guest.email} (ticket {guest.ticket})"))
+            logger.info(f"user_fix: Unassigned rooms for refunded guest {guest.email} (ticket {guest.ticket})")
+            return
+        if getattr(self, '_dry_run_refunded', False):
+            self.stdout.write(self.style.WARNING("Ticket appears refunded. In non-dry-run mode this command will unassign any rooms associated with refunded tickets."))
+            self.stdout.write(self.style.WARNING("Dry-run mode - no changes applied"))
+            return
 
         # Step 3: Fetch Secret Party data and get guest_ingest object
         guest_ingest = self._get_secret_party_guest_ingest(guest)
@@ -56,6 +91,9 @@ class Command(BaseCommand):
 
         # Step 8: Confirm and apply changes
         if dry_run:
+            # Additionally, check if the guest's ticket is refunded and show proposed unassignments
+            if self._is_ticket_refunded(guest.ticket):
+                self.stdout.write(self.style.WARNING("Note: Ticket appears refunded. In non-dry-run mode this command will unassign any rooms associated with refunded tickets."))
             self.stdout.write(self.style.WARNING("Dry-run mode - no changes applied"))
             return
 
@@ -251,3 +289,127 @@ class Command(BaseCommand):
             logger.info(
                 f"Applied room assignment: guest {guest.email} → room {room.name_hotel} {room.number}"
             )
+
+    def _is_ticket_refunded(self, ticket_code):
+        """Return True if the ticket appears refunded in Secret Party data.
+
+        Prefer a filtered export (status:refunded). If that isn't available or
+        returns nothing (e.g. no API key), scan cached export files in the
+        configured CHECK_CACHE_DIR for any cached exports and search them as well.
+        """
+        from pathlib import Path
+
+        sp_client = SecretPartyClient(api_key=roombaht_config.SP_API_KEY if roombaht_config.SP_API_KEY else None)
+        tickets = []
+
+        # Try filtered export first (requires API key)
+        try:
+            tickets = sp_client.export_tickets(search=[{"label": "status:refunded"}]) or []
+        except Exception as e:
+            logger.warning(f"Filtered Secret Party export failed when checking refund: {e}")
+            tickets = []
+
+        # If filtered export returned nothing or wasn't possible, fall back to scanning cache files.
+        # Read cache files directly (ignoring cache age) so we can still detect refunds when the
+        # filtered export isn't available. This avoids ordering issues where a previous cached
+        # export contains the refunded ticket but the filtered export isn't present.
+        if not tickets:
+            try:
+                cache_dir = Path(roombaht_config.CHECK_CACHE_DIR).expanduser()
+                if cache_dir.exists():
+                    import json as _json
+                    for p in cache_dir.glob('secret_party_check_*.json'):
+                        try:
+                            with open(p, 'r') as f:
+                                cached = _json.load(f)
+                            if cached:
+                                tickets.extend(cached)
+                        except Exception:
+                            # ignore individual cache read failures
+                            continue
+            except Exception as e:
+                logger.warning(f"Failed to scan Secret Party cache directory for refund check: {e}")
+
+        if not tickets:
+            # No data to check, treat as not refunded to avoid accidental unassign
+            return False
+
+        for t in tickets:
+            try:
+                ingest = SecretPartyGuestIngest.from_source(t, source_type='json')
+                if ingest.ticket_code == ticket_code and getattr(ingest, 'status', '').lower() == 'refunded':
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def _unassign_refunded_guest(self, guest):
+        """Unassign rooms and clean guest/room records for refunded tickets.
+
+        Behavior per user request:
+        - Remove primary, secondary, swap_code, swap_time from Room
+        - Reset check-in/check-out to system defaults
+        - Set is_swappable=True and is_available=True for placed rooms
+        - Clear sp_ticket_id and guest association
+        - Clear guest.hotel, guest.room_number and set guest.can_login=False
+        """
+        # Collect affected rooms
+        rooms = list(guest.room_set.all())
+
+        if not rooms:
+            # Also check for Room objects that reference guest by sp_ticket_id
+            rooms = list(Room.objects.filter(sp_ticket_id=guest.ticket))
+
+        if not rooms:
+            self.stdout.write(self.style.WARNING(f"No Room objects found for guest {guest.email} (ticket {guest.ticket})"))
+            return
+
+        # Show what will be changed
+        self.stdout.write("The following rooms will be unassigned and cleaned:")
+        for r in rooms:
+            self.stdout.write(f" - {r.name_hotel} {r.number}")
+
+        # Perform changes atomically
+        with transaction.atomic():
+            for r in rooms:
+                # Clear assignment-related fields
+                r.primary = ''
+                r.secondary = '' if hasattr(r, 'secondary') else r.__dict__.get('secondary', '')
+                if hasattr(r, 'swap_code'):
+                    r.swap_code = ''
+                if hasattr(r, 'swap_time'):
+                    r.swap_time = None
+
+                # Reset check-in/check-out to defaults from config if present
+                if hasattr(r, 'check_in') and hasattr(r, 'check_out'):
+                    default_ci = getattr(roombaht_config, 'DEFAULT_CHECKIN', None)
+                    default_co = getattr(roombaht_config, 'DEFAULT_CHECKOUT', None)
+                    if default_ci is not None:
+                        r.check_in = default_ci
+                    if default_co is not None:
+                        r.check_out = default_co
+
+                # For placed rooms: set is_swappable and is_available to True
+                if hasattr(r, 'is_swappable'):
+                    r.is_swappable = True
+                if hasattr(r, 'is_available'):
+                    r.is_available = True
+
+                # Clear sp_ticket_id and guest association
+                r.sp_ticket_id = '' if hasattr(r, 'sp_ticket_id') else r.__dict__.get('sp_ticket_id', '')
+                # If room.guest is a FK to Guest, null it
+                try:
+                    r.guest = None
+                except Exception:
+                    # ignore if not applicable
+                    pass
+
+                r.save()
+
+            # Clean guest record
+            guest.hotel = '' if hasattr(guest, 'hotel') else guest.__dict__.get('hotel', '')
+            guest.room_number = None
+            guest.can_login = False
+            guest.save()
+
+

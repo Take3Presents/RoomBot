@@ -114,7 +114,8 @@ def create_rooms_main(cmd, args):
             if 'mountainview' in features or 'mountain view' in features:
                 room.is_mountainview = True
 
-        if elem.placed_by_roombaht and not room.placed_by_roombot:
+        # todo `placed_by_roombaht` should be parsed as a bool!
+        if elem.placed_by_roombaht.lower() == 'true' and not room.placed_by_roombot:
             room.placed_by_roombot = True
             room.is_placed = False
             room.is_available = True
@@ -122,7 +123,7 @@ def create_rooms_main(cmd, args):
             if room.name_hotel in roombaht_config.VISIBLE_HOTELS:
                 room.is_swappable = True
 
-        elif not elem.placed_by_roombaht and room.placed_by_roombot:
+        elif elem.placed_by_roombaht.lower() == 'false' and room.placed_by_roombot:
             room.placed_by_roombot = False
             room.is_available = False
             room.is_swappable = False
@@ -239,7 +240,12 @@ def create_rooms_main(cmd, args):
             if ticket_changed and room.guest:
                 if room.guest.last_login:
                     cmd.stdout.write(cmd.style.ERROR(f"Room{room.number} user has already logged in! Update anyway?"))
-                    if getch() != 'y':
+                    cmd.stdout.write("[y/n/q (to stop process)]")
+                    a_key = getch()
+                    if a_key == 'q':
+                        cmd.stdout.write(cmd.style.ERROR("Giving up on update process"))
+                        sys.exit(1)
+                    elif a_key != 'y':
                         continue
 
                 if room.guest \
