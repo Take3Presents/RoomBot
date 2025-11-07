@@ -14,10 +14,14 @@ cleanup() {
     if [ -e "$ENV_FILE" ] ; then
 	rm "$ENV_FILE"
 	if [ -n "$SSH_HOST" ] && [ -n "$R_SECRET" ] ; then
-	    ssh -o 'ControlMaster no' "$SSH_HOST" "sudo rm -f /tmp/${R_SECRET}"
+	    ssh -o "ControlPath=${SSH_CONTROL_SOCKET}" "$SSH_HOST" "sudo rm -f /tmp/${R_SECRET}" 2>/dev/null || true
 	fi
     fi
-
+    # Clean up control socket
+    if [ -n "$SSH_CONTROL_SOCKET" ] && [ -S "$SSH_CONTROL_SOCKET" ] ; then
+	ssh -O exit -o "ControlPath=${SSH_CONTROL_SOCKET}" "$SSH_HOST" 2>/dev/null || true
+	rm -f "$SSH_CONTROL_SOCKET"
+    fi
 }
 
 usage() {
@@ -57,7 +61,7 @@ USAGE
 
 yeet_command() {
     local COMMAND="$1"
-    ssh -t -o 'ControlMaster no' "${SSH_HOST}" "$COMMAND"
+    ssh -t -o "ControlPath=${SSH_CONTROL_SOCKET}" -o 'ControlMaster=auto' -o 'ControlPersist=300' "${SSH_HOST}" "$COMMAND"
 }
 
 yeet_file() {
@@ -66,7 +70,7 @@ yeet_file() {
     if [ ! -e "$SRC" ] ; then
 	problems "Unable to find source file ${SRC}"
     fi
-    scp -q "$SRC" "${SSH_HOST}:/tmp/${DEST}"
+    scp -q -o "ControlPath=${SSH_CONTROL_SOCKET}" "$SRC" "${SSH_HOST}:/tmp/${DEST}"
 }
 
 yeet_script() {
@@ -111,6 +115,11 @@ if [ -z "$SSH_HOST" ] ; then
 else
     SSH_HOST="${R_USER}@${SSH_HOST}"
 fi
+
+# Setup dedicated control socket for this script
+SSH_CONTROL_DIR="${HOME}/.cache/roombot/ssh"
+mkdir -p "$SSH_CONTROL_DIR"
+SSH_CONTROL_SOCKET="${SSH_CONTROL_DIR}/${R_ENV}-${R_USER}-$$"
 
 # keep it random, allows for multiple invocations
 R_SCRIPT="roombaht_ctl-remote-${RANDOM}.sh"
@@ -169,13 +178,13 @@ elif [ "$ACTION" == "snapshot-fetch" ] ; then
     # * run command and capture output (hence not using yeet_ctl)
     # * make sure remote file exists, and fetch
     # * clean up after ourselves
-    OUTPUT=$(ssh -o 'ControlMaster no' "${SSH_HOST}" "sudo bash -c 'export ENV_FILE=/tmp/${R_SECRET} ; bash /tmp/${R_SCRIPT} ${CMD}'; sudo rm -f /tmp/${R_SCRIPT} /tmp/${R_SECRET}") || true
+    OUTPUT=$(ssh -o "ControlPath=${SSH_CONTROL_SOCKET}" -o 'ControlMaster=auto' -o 'ControlPersist=300' "${SSH_HOST}" "sudo bash -c 'export ENV_FILE=/tmp/${R_SECRET} ; bash /tmp/${R_SCRIPT} ${CMD}'; sudo rm -f /tmp/${R_SCRIPT} /tmp/${R_SECRET}") || true
     REMOTE_PATH="$(echo "$OUTPUT" | tail -n1 | tr -d '\r')"
     if [ -z "$REMOTE_PATH" ] ; then
         problems "remote did not produce snapshot path. Output was: $OUTPUT"
     fi
-    scp -q "${SSH_HOST}:${REMOTE_PATH}" .
-    ssh -o 'ControlMaster no' "${SSH_HOST}" "sudo rm -f '${REMOTE_PATH}'" >/dev/null 2>&1 || true
+    scp -q -o "ControlPath=${SSH_CONTROL_SOCKET}" "${SSH_HOST}:${REMOTE_PATH}" .
+    ssh -o "ControlPath=${SSH_CONTROL_SOCKET}" "${SSH_HOST}" "sudo rm -f '${REMOTE_PATH}'" >/dev/null 2>&1 || true
 elif [ "$ACTION" == "wipe" ] || [ "$ACTION" == "clone_db" ] ; then
     if [ "$R_ENV" == "prod" ] ; then
         if [ "$ACTION" == "wipe" ] ; then
