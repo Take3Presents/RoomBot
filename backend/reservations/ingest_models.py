@@ -14,6 +14,7 @@ class SecretPartyGuestIngest(BaseModel):
     email: str
     product: str  # product code, eg name of addon for event, or hotel sku
     transferred_from_code: Optional[str] = None
+    status: Optional[str] = 'active'  # todo - this will no longer be optional when we get rid of csv imports
     type: Optional[str] = None
 
     @classmethod
@@ -38,6 +39,7 @@ class SecretPartyGuestIngest(BaseModel):
             email=json_data.get('email', ''),
             product=json_data.get('product', {}).get('name'),
             transferred_from_code=json_data.get('transferred_from', {}).get('code', ''),
+            status=json_data.get('status', 'unknown'),
             type=json_data.get('type')
         )
 
