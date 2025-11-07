@@ -329,10 +329,7 @@ class Room(DirtyFieldsMixin, models.Model):
                            room_one.name_hotel, room_one.number)
             raise ForceMoveError('Room one is not swappable')
 
-        if not room_two.swappable():
-            logger.warning("Attempted to force_move to non swappable room %s %s",
-                           room_two.name_hotel, room_two.number)
-            raise ForceMoveError('Room two is not swappable')
+        # This is a force move, so the target room does not need to be swappable
 
         if room_two.guest:
             room_two.guest.room_number = None
