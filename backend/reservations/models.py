@@ -333,6 +333,7 @@ class Room(DirtyFieldsMixin, models.Model):
 
         if room_two.guest:
             room_two.guest.room_number = None
+            room_two.guest.save()
         room_one.guest.room_number = room_two.number
 
         room_one.swap_code = None
