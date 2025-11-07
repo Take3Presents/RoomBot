@@ -82,6 +82,10 @@ class TestRoomFixCommand(TestCase):
     @patch('reservations.management.commands.room_fix.fuzz.ratio', return_value=10)
     def test_select_existing_candidate_with_ticket(self, mock_fuzz, mock_getch, mock_mismatch):
         """Selecting an occupant should associate an existing Guest with matching ticket"""
+        # Change the original guest's ticket to avoid conflict
+        self.orig_guest.ticket = "T999"
+        self.orig_guest.save()
+
         # create a candidate with matching ticket
         candidate = Guest.objects.create(name="Candidate Name", email="cand@example.com", ticket="T100", room_number=None, hotel=None)
         self.room.sp_ticket_id = "T100"
@@ -95,7 +99,7 @@ class TestRoomFixCommand(TestCase):
 
         self.assertFalse(self.room.is_available)
         self.assertEqual(self.room.primary, candidate.name)
-        self.assertEqual(self.room.guest, candidate)
+        self.assertEqual(self.room.guest.id, candidate.id)
         self.assertIn("Associated existing guest", out)
 
     @patch('reservations.management.commands.room_fix.room_guest_name_mismatch', return_value=True)
@@ -105,8 +109,8 @@ class TestRoomFixCommand(TestCase):
         """When no suitable candidates exist, a new Guest is created and associated"""
         # ensure no candidates for name
         self.room.sp_ticket_id = ""
-        # also disassociate the current guest so the associated_name isn't added to options
-        self.room.guest = None
+        # Keep room.guest set so the command enters the fix logic,
+        # but the guest's name won't match any of the new occupants
         self.room.primary = ''
         self.room.save()
 
