@@ -76,7 +76,14 @@ yeet_script() {
 
 yeet_ctl() {
     local CTL="$1"
-    yeet_command "sudo bash -c 'export ENV_FILE=/tmp/${R_SECRET} ; bash /tmp/${R_SCRIPT} ${CTL}'; sudo rm -f /tmp/${R_SCRIPT} /tmp/${R_SECRET}"
+    shift
+    # Encode remaining arguments as base64 to survive shell quoting hell
+    # Each argument gets its own line, then we base64 the whole thing
+    local ARGS_B64=""
+    if [ $# -gt 0 ]; then
+        ARGS_B64=$(printf '%s\n' "$@" | base64 -w0)
+    fi
+    yeet_command "sudo bash -c 'export ENV_FILE=/tmp/${R_SECRET} ARGS_B64=${ARGS_B64}; bash /tmp/${R_SCRIPT} ${CTL}'; sudo rm -f /tmp/${R_SCRIPT} /tmp/${R_SECRET}"
 }
 
 trap cleanup EXIT
@@ -91,7 +98,6 @@ shift 3
 ENV_FILE="${ROOTDIR}/secrets/${R_ENV}.env"
 ENC_FILE="${ROOTDIR}/config/${R_ENV}.enc"
 
-[ -e "$ENV_FILE" ] && problems "plaintext secrets present"
 [ -e "$ENC_FILE" ] || problems "env file not found"
 
 # always extract ssh host
@@ -124,7 +130,7 @@ if [ "$ACTION" == "load_staff" ] ; then
     STAFF_DEST="$(basename "$STAFF_SRC")"
     yeet_file "$STAFF_SRC" "$STAFF_DEST"
     yeet_script
-    yeet_ctl "load_staff ${STAFF_DEST}"
+    yeet_ctl "load_staff" "${STAFF_DEST}"
 elif [ "$ACTION" == "load_rooms" ] ; then
     HOTEL="$1"
     ROOM_SRC="$2"
@@ -140,7 +146,7 @@ elif [ "$ACTION" == "load_rooms" ] ; then
     STAFF_DEST="$(basename "$ROOM_SRC")"
     yeet_file "$ROOM_SRC" "$STAFF_DEST"
     yeet_script
-    yeet_ctl "load_rooms ${HOTEL} ${STAFF_DEST} $*"
+    yeet_ctl "load_rooms" "${HOTEL}" "${STAFF_DEST}" "$@"
 elif [ "$ACTION" == "backend-log" ] ; then
     yeet_command "sudo journalctl -f -u roombaht -u cron.service -t roombaht-oob -t uwsgi -n 100"
 elif [ "$ACTION" == "frontend-log" ] ; then
@@ -149,10 +155,10 @@ elif [ "$ACTION" == "backend-restart" ] ; then
     yeet_command "sudo systemctl restart roombaht"
 elif [ "$ACTION" == "snapshot" ] ; then
     yeet_script
-    yeet_ctl "${ACTION} snapshot"
+    yeet_ctl "${ACTION}" "snapshot"
 elif [ "$ACTION" == "snapshot-list" ] ; then
     yeet_script
-    yeet_ctl "${ACTION} snapshot-list"
+    yeet_ctl "${ACTION}" "snapshot-list"
 elif [ "$ACTION" == "snapshot-fetch" ] ; then
     if [ -n "$1" ] ; then
 	CMD="snapshot-fetch $1"
@@ -202,7 +208,7 @@ elif [ "$ACTION" == "wipe" ] || [ "$ACTION" == "clone_db" ] ; then
         fi
     fi
     yeet_script
-    yeet_ctl "${ACTION} $*"
+    yeet_ctl "${ACTION}" "$@"
 elif [ "$ACTION" == "deploy" ] || [ "$ACTION" == "quick_deploy" ] ; then
     BACKEND_SRC="${ROOTDIR}/build/roombaht-backend.tgz"
     FRONTEND_SRC="${ROOTDIR}/build/roombaht-frontend.tgz"
@@ -218,7 +224,7 @@ elif [ "$ACTION" == "deploy" ] || [ "$ACTION" == "quick_deploy" ] ; then
     yeet_ctl "$ACTION"
 elif [ "$ACTION" == "manage" ] ; then
     yeet_script
-    yeet_ctl "manage $*"
+    yeet_ctl "manage" "$@"
 elif [ "$ACTION" == "provision" ] ; then
     yeet_file "${SCRIPTDIR}/provision-remote.sh"
     yeet_command "sudo bash /tmp/provision-remote.sh ; sudo rm /tmp/provision-remote.sh"

@@ -246,6 +246,15 @@ trap cleanup EXIT
 [ "$#" -ge 1 ] || problems "invalid args"
 ACTION="$1"
 shift
+
+# Decode arguments if passed via ARGS_B64
+if [ -n "$ARGS_B64" ]; then
+    # Decode base64 and read into array
+    mapfile -t DECODED_ARGS < <(echo "$ARGS_B64" | base64 -d)
+    # Replace positional parameters with decoded args
+    set -- "${DECODED_ARGS[@]}"
+fi
+
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
@@ -300,7 +309,7 @@ elif [ "$ACTION" == "snapshot-list" ] ; then
 elif [ "$ACTION" == "manage" ] ; then
     env_check
     "/opt/roombaht-backend/.venv/bin/python3" \
-	"/opt/roombaht-backend/manage.py" $*
+	"/opt/roombaht-backend/manage.py" "$@"
 elif [ "$ACTION" == "deploy" ] ; then
     frontend_deploy
     backend_deploy
