@@ -80,6 +80,13 @@ python_freshen() {
     fi
 }
 
+service_cleanup() {
+    if systemctl is-active snap.amazon-ssm-agent.amazon-ssm-agent &> /dev/null ; then
+	systemctl stop snap.amazon-ssm-agent.amazon-ssm-agent
+	systemctl disable snap.amazon-ssm-agent.amazon-ssm-agent
+    fi
+}
+
 os_freshen
 python_freshen
 
@@ -95,3 +102,5 @@ sudo_user gadget
 sudo_user index
 sudo_user cubes
 sudo_user whiteavian
+
+service_cleanup

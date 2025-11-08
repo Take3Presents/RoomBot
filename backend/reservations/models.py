@@ -17,6 +17,13 @@ class SwapError(Exception):
         self.msg = msg
         super().__init__(f"Unable to complete swap: {msg}")
 
+
+class ForceMoveError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+        super().__init__(f"Unable to complete force_move: {msg}")
+
+
 class UnknownProductError(Exception):
     def __init__(self, product):
         self.product = product
@@ -298,6 +305,74 @@ class Room(DirtyFieldsMixin, models.Model):
 
         room_two.guest.save()
         room_one.guest.save()
+
+    @staticmethod
+    @transaction.atomic
+    def force_move(room_one, room_two):
+        """Forcefully move the guests of room_one into room_two.
+
+        Note, this is a destructive operation and will orphan the guests,
+        if any, in room_two.
+
+        """
+        # Preflight checks, copied from swap()
+        # TODO: refactor to avoid duplication
+        if room_two.name_take3 != room_one.name_take3 or \
+           room_two.name_hotel != room_one.name_hotel:
+            logger.warning("Attempt to force_move between mismatched room types %s (%s) - %s (%s)",
+                           room_one.number, room_one.name_take3,
+                           room_two.number, room_two.name_take3)
+            raise ForceMoveError('mismatched room type')
+
+        if not room_one.swappable():
+            logger.warning("Attempted to force_move from non swappable room %s %s",
+                           room_one.name_hotel, room_one.number)
+            raise ForceMoveError('Room one is not swappable')
+
+        # This is a force move, so the target room does not need to be swappable
+
+        if room_two.guest:
+            room_two.guest.room_number = None
+            room_two.guest.save()
+        room_one.guest.room_number = room_two.number
+
+        room_one.swap_code = None
+        room_one.swap_code_time = None
+        guest_to_move = room_one.guest
+        room_one.guest = None
+        room_two.guest = guest_to_move
+
+        room_one_primary = room_one.primary
+        room_one_secondary = room_one.secondary
+        room_one.primary = ""
+        room_two.primary = room_one_primary
+
+        room_one.secondary = ""
+
+        if room_one.secondary:
+            room_two.secondary = room_one_secondary
+            room_one.secondary = ""
+
+        room_one_check_in = room_one.check_in
+        room_one_check_out = room_one.check_out
+        room_one.check_in = room_two.check_in
+        room_one.check_out = room_two.check_out
+        room_two.check_in = room_one_check_in
+        room_two.check_out = room_one_check_out
+
+        room_one_sp_ticket_id = room_one.sp_ticket_id
+        room_one.sp_ticket_id = None
+        room_two.sp_ticket_id = room_one_sp_ticket_id
+
+        # we force this for both rooms to enable swap cooldown time
+        room_one.swap_time = make_aware(datetime.datetime.utcnow())
+        room_two.swap_time = make_aware(datetime.datetime.utcnow())
+
+        room_two.save()
+        room_one.save()
+
+        guest_to_move.save()
+
 
 class Swap(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

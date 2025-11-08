@@ -109,8 +109,8 @@ class TestRoomFixCommand(TestCase):
         """When no suitable candidates exist, a new Guest is created and associated"""
         # ensure no candidates for name
         self.room.sp_ticket_id = ""
-        # also disassociate the current guest so the associated_name isn't added to options
-        self.room.guest = None
+        # Keep room.guest set so the command enters the fix logic,
+        # but the guest's name won't match any of the new occupants
         self.room.primary = ''
         self.room.save()
 

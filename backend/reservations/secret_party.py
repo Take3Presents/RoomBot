@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import hashlib
 from typing import Optional, List, Dict, Any, Union
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -42,51 +43,76 @@ class SecretPartyClient:
         # Cache configuration
         from reservations import config as roombaht_config
         self.cache_dir = Path(roombaht_config.CHECK_CACHE_DIR).expanduser()
+        # legacy default (may be unused if param-specific cache is used)
         self.cache_file = self.cache_dir / 'secret_party_check.json'
         self.cache_max_age = timedelta(hours=1)
 
-    def _read_cache(self) -> Optional[List[Dict[str, Any]]]:
+    def _cache_file_for_params(self, order: Optional[str], reverse: Optional[bool], search: Optional[List[Dict[str, str]]]) -> Path:
+        """
+        Build a cache file path that takes into account the order, reverse and search parameters.
+        """
+        key_obj = {
+            'order': order,
+            'reverse': reverse,
+            'search': search
+        }
+        try:
+            key_json = json.dumps(key_obj, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            # Fallback - coerce to string
+            key_json = str(key_obj)
+
+        key_hash = hashlib.sha256(key_json.encode('utf-8')).hexdigest()
+        return self.cache_dir / f"secret_party_check_{key_hash}.json"
+
+    def _read_cache(self, cache_file: Optional[Path] = None) -> Optional[List[Dict[str, Any]]]:
         """
         Read ticket data from cache file if it exists and is fresh.
 
         Returns:
             List of ticket dictionaries if cache is valid, None otherwise
         """
-        if not self.cache_file.exists():
-            self.logger.debug(f"Cache file {self.cache_file} does not exist")
+        if cache_file is None:
+            cache_file = self.cache_file
+
+        if not cache_file.exists():
+            self.logger.debug(f"Cache file {cache_file} does not exist")
             return None
 
         try:
-            cache_mtime = datetime.fromtimestamp(self.cache_file.stat().st_mtime)
+            cache_mtime = datetime.fromtimestamp(cache_file.stat().st_mtime)
             cache_age = datetime.now() - cache_mtime
 
             if cache_age >= self.cache_max_age:
-                self.logger.info(f"Cache expired (age: {cache_age}, max: {self.cache_max_age})")
+                self.logger.info(f"Cache expired (age: {cache_age}, max: {self.cache_max_age}) for {cache_file}")
                 return None
 
-            with open(self.cache_file, 'r') as f:
+            with open(cache_file, 'r') as f:
                 data = json.load(f)
-                self.logger.info(f"Loaded {len(data)} tickets from cache (age: {cache_age})")
+                self.logger.info(f"Loaded {len(data)} tickets from cache {cache_file} (age: {cache_age})")
                 return data
 
         except (json.JSONDecodeError, IOError, OSError) as e:
-            self.logger.warning(f"Failed to read cache file {self.cache_file}: {e}")
+            self.logger.warning(f"Failed to read cache file {cache_file}: {e}")
             return None
 
-    def _write_cache(self, data: List[Dict[str, Any]]) -> None:
+    def _write_cache(self, data: List[Dict[str, Any]], cache_file: Optional[Path] = None) -> None:
         """
         Write ticket data to cache file.
 
         Args:
             data: List of ticket dictionaries to cache
         """
+        if cache_file is None:
+            cache_file = self.cache_file
+
         try:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-            with open(self.cache_file, 'w') as f:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(cache_file, 'w') as f:
                 json.dump(data, f)
-            self.logger.info(f"Cached {len(data)} tickets to {self.cache_file}")
+            self.logger.info(f"Cached {len(data)} tickets to {cache_file}")
         except Exception as e:
-            self.logger.warning(f"Failed to write cache to {self.cache_file}: {e}")
+            self.logger.warning(f"Failed to write cache to {cache_file}: {e}")
 
     def export_tickets(
         self,
@@ -111,17 +137,13 @@ class SecretPartyClient:
         Raises:
             SecretPartyAuthError: If authentication fails
             SecretPartyAPIError: If API request fails or no API key provided when needed
-
-        Example:
-            # Get all active and transferred tickets (uses cache if available)
-            client.export_tickets(order="last_name", reverse=True, search=[])
-
-            # Force fresh data from API
-            client.export_tickets(order="last_name", reverse=True, search=[], force=True)
         """
+        # Determine cache file for these parameters
+        cache_file_for_params = self._cache_file_for_params(order, reverse, search)
+
         # Try cache first unless force=True
         if not force:
-            cached_data = self._read_cache()
+            cached_data = self._read_cache(cache_file=cache_file_for_params)
             if cached_data is not None:
                 return cached_data
 
@@ -162,8 +184,8 @@ class SecretPartyClient:
                 tickets = data['tickets']
                 self.logger.info(f"Successfully retrieved {len(tickets)} tickets")
 
-                # Write to cache
-                self._write_cache(tickets)
+                # Write to cache specific to these parameters
+                self._write_cache(tickets, cache_file=cache_file_for_params)
 
                 return tickets
             except json.JSONDecodeError as e:
