@@ -82,7 +82,7 @@ class TestRoomFixCommand(TestCase):
     @patch('reservations.management.commands.room_fix.fuzz.ratio', return_value=10)
     def test_select_existing_candidate_with_ticket(self, mock_fuzz, mock_getch, mock_mismatch):
         """Selecting an occupant should associate an existing Guest with matching ticket"""
-        # Change the original guest's ticket to avoid conflict
+        # Change original guest's ticket to avoid conflict
         self.orig_guest.ticket = "T999"
         self.orig_guest.save()
 

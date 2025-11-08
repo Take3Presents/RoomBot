@@ -32,23 +32,29 @@ class Command(BaseCommand):
         except Room.DoesNotExist as exp:
             raise CommandError(f"Room {kwargs['number']} not found in {kwargs['hotel_name']}") from exp
 
-        if room.guest and room_guest_name_mismatch(room):
-            self.stdout.write(f"Guest {room.guest.name} not found in room occupants")
+        if (room.guest and room_guest_name_mismatch(room)) or (not room.guest):
+            if room.guest:
+                self.stdout.write(f"Guest {room.guest.name} not found in room occupants")
+            else:
+                self.stdout.write("No guest associated with this room")
 
             occupants = room.occupants()
             matched_any = False
 
             max_fuzz = 0
+            base_name = room.guest.name if room.guest else ''
             # First try to fuzz match as before
             for name in occupants:
-                fuzziness = fuzz.ratio(room.guest.name, name)
+                fuzziness = fuzz.ratio(base_name, name)
                 if fuzziness >= kwargs['fuzziness']:
                     matched_any = True
-                    guest_entries = Guest.objects.filter(email=room.guest.email)
-                    self.stdout.write(self.style.SUCCESS(f"Updating guest {guest_entries.count()} record(s) with {fuzziness} fuzzy match {name}"))
-                    for guest in guest_entries:
-                        guest.name = name
-                        guest.save()
+                    # Only update existing guest records if we have an original guest to base them on
+                    if room.guest:
+                        guest_entries = Guest.objects.filter(email=room.guest.email)
+                        self.stdout.write(self.style.SUCCESS(f"Updating guest {guest_entries.count()} record(s) with {fuzziness} fuzzy match {name}"))
+                        for guest in guest_entries:
+                            guest.name = name
+                            guest.save()
 
                 if fuzziness > max_fuzz:
                     max_fuzz = fuzziness
@@ -105,13 +111,15 @@ class Command(BaseCommand):
                 candidates = Guest.objects.filter(name__iexact=selected_name)
 
             # prefer candidates in this order
-            # * if the sp ticket id matches
+            # * if the sp ticket id matches AND guest is not currently associated with a different room
             # * if there is no ticket, room number, or hotel
             preferred = None
             for c in candidates:
                 if room.sp_ticket_id and c.ticket == room.sp_ticket_id:
-                    preferred = c
-                    break
+                    # Prefer candidates not already associated, or the currently associated guest
+                    if not c.room_number or not c.hotel or c == og_guest:
+                        preferred = c
+                        break
                 elif not c.ticket or not c.room_number or not c.hotel:
                     preferred = c
                     break

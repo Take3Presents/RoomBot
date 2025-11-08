@@ -233,7 +233,7 @@ class aaaHowLongTho extends React.Component {
 	    </Row>
 	    <Row>
 	      <Col className="d-flex justify-content-center">
-	        <Display value={this.state.hours ? this.state.hours : '00'} skew="true" height="100"/>
+	        <Display value={this.state.hours ? this.state.hours : '00'} skew="true" height="100" count="3"/>
 	        <Col className="timerClass">Hr</Col>
 	      </Col>
 	      <Col className="d-flex justify-content-center">
