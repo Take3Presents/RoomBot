@@ -36,6 +36,14 @@ class Command(BaseCommand):
         self.stdout.write(f"  Rooms with swap codes: {metrics['rooms_swap_code_count']}")
         self.stdout.write(f"  Successful swaps:      {metrics['rooms_swap_success_count']}")
 
+        # Onboarding metrics (per-email, deduplicated)
+        self.stdout.write(self.style.HTTP_INFO("\nOnboarding Statistics (per email):"))
+        self.stdout.write(f"  Onboarding sent:     {metrics['onboarding_sent_emails']}")
+        self.stdout.write(f"  Onboarding pending:  {metrics['onboarding_pending_emails']}")
+        self.stdout.write(f"  Can login:           {metrics['can_login_emails']}")
+        self.stdout.write(f"  Users with rooms:    {metrics['users_with_rooms']}")
+        self.stdout.write(f"  Known tickets:       {metrics['known_tickets']}")
+
         # Room type breakdown
         if metrics['rooms']:
             self.stdout.write(self.style.HTTP_INFO("\nRoom Type Breakdown:"))

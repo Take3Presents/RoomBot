@@ -6,6 +6,7 @@ the web admin interface and the management command line interface.
 import logging
 import sys
 
+from django.db.models import Count, Max, Case, When, IntegerField, Q
 from reservations.models import Guest, Room
 from reservations.constants import ROOM_LIST
 from reservations.reporting import diff_swaps_count
@@ -114,6 +115,62 @@ def calculate_swap_metrics():
     }
 
 
+def calculate_onboarding_metrics():
+    """Calculate onboarding and per-email (deduplicated) guest metrics.
+
+    Returns:
+        dict: Per-email guest metrics including:
+            - onboarding_sent_emails: Number of eligible email groups that have been sent onboarding
+            - onboarding_pending_emails: Number of eligible email groups waiting for onboarding
+            - can_login_emails: Number of email groups that can login
+            - users_with_rooms: Number of email groups with assigned rooms
+            - known_tickets: Number of email groups with tickets
+    """
+    # Exclude blank/null emails from per-email metrics
+    blank_email_q = Q(email='') | Q(email__isnull=True)
+    blank_count = Guest.objects.filter(blank_email_q).count()
+    if blank_count > 0:
+        # Log a warning and include a small sample of affected guest ids for debugging
+        sample_ids = list(Guest.objects.filter(blank_email_q).values_list('id', flat=True)[:10])
+        logger.warning(
+            "Found %d guest records with blank or null email; excluding them from per-email metrics. Sample ids: %s",
+            blank_count, ','.join([str(x) for x in sample_ids])
+        )
+
+    # per-email (deduplicated) metrics using OR semantics: an email-group is True if any
+    # record with that email has the flag/field. We use annotate + Max(Case(...)) to push
+    # the aggregation to the DB. Exclude blank/null emails from grouping.
+    email_qs = Guest.objects.exclude(blank_email_q)
+
+    email_groups = email_qs.values('email').annotate(
+        onboarding_sent=Max(Case(When(onboarding_sent=True, then=1), default=0, output_field=IntegerField())),
+        can_login=Max(Case(When(can_login=True, then=1), default=0, output_field=IntegerField())),
+        has_room=Max(Case(When(room__isnull=False, then=1), default=0, output_field=IntegerField())),
+        has_ticket=Max(Case(When(Q(ticket__isnull=False) & ~Q(ticket=''), then=1), default=0, output_field=IntegerField())),
+    )
+
+    # eligible: only email-groups where they can login AND have rooms
+    eligible_groups = email_groups.filter(can_login=1, has_room=1)
+    eligible_count = eligible_groups.count()
+
+    # onboarding metrics computed only among eligible email groups
+    onboarding_sent_emails = eligible_groups.filter(onboarding_sent=1).count()
+    onboarding_pending_emails = eligible_count - onboarding_sent_emails
+
+    # other per-email metrics (not restricted to eligible set)
+    can_login_emails = email_groups.filter(can_login=1).count()
+    users_with_rooms = email_groups.filter(has_room=1).count()
+    known_tickets = email_groups.filter(has_ticket=1).count()
+
+    return {
+        'onboarding_sent_emails': onboarding_sent_emails,
+        'onboarding_pending_emails': onboarding_pending_emails,
+        'can_login_emails': can_login_emails,
+        'users_with_rooms': users_with_rooms,
+        'known_tickets': known_tickets,
+    }
+
+
 def get_all_metrics():
     """Calculate all metrics and return as a single dict.
 
@@ -122,6 +179,7 @@ def get_all_metrics():
             - All guest metrics
             - All room metrics
             - All swap metrics
+            - All onboarding metrics
             - rooms: List of room type breakdown metrics
             - version: RoomBot version string
     """
@@ -131,6 +189,7 @@ def get_all_metrics():
     metrics.update(calculate_guest_metrics())
     metrics.update(calculate_room_metrics())
     metrics.update(calculate_swap_metrics())
+    metrics.update(calculate_onboarding_metrics())
     metrics['rooms'] = calculate_room_type_metrics()
     metrics['version'] = roombaht_config.VERSION.rstrip()
 
