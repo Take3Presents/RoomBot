@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -8,16 +9,35 @@ from rest_framework import viewsets
 import reservations.config as roombaht_config
 from waittime.serializers import WaitViewSerializer, WaitListSerializer, WaitSerializer
 
+logging.basicConfig(stream=sys.stdout, level=roombaht_config.LOGLEVEL)
+logger = logging.getLogger('ViewLogger_waittime')
+
 class WaitViewSet(viewsets.ModelViewSet):
     queryset = Wait.objects.all()
     serializer_class = WaitSerializer
     lookup_field = 'short_name'
 
-    def list(self, _request):
+    def _check_feature_enabled(self):
+        """Return 501 if waittime feature is disabled"""
+        if 'waittime' not in roombaht_config.FEATURES:
+            logger.warning("Access attempt to disabled feature: waittime")
+            return Response(
+                {'error': 'Wait time feature is not enabled'},
+                status=status.HTTP_501_NOT_IMPLEMENTED
+            )
+        return None
+
+    def list(self, request):
+        error = self._check_feature_enabled()
+        if error:
+            return error
         serializer = WaitListSerializer(self.get_queryset(), many=True)
         return Response(serializer.data)
 
-    def retrieve(self, _request, *args, **kwargs):
+    def retrieve(self, request, *args, **kwargs):
+        error = self._check_feature_enabled()
+        if error:
+            return error
         existing = self.get_object()
         serializer = WaitViewSerializer(existing)
         data = serializer.data
@@ -26,7 +46,16 @@ class WaitViewSet(viewsets.ModelViewSet):
 
         return Response(data)
 
+    def create(self, request, *args, **kwargs):
+        error = self._check_feature_enabled()
+        if error:
+            return error
+        return super().create(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
+        error = self._check_feature_enabled()
+        if error:
+            return error
         existing = self.get_object()
         if existing.password:
             if 'password' not in request.data:
@@ -38,6 +67,9 @@ class WaitViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_202_ACCEPTED)
 
     def update(self, request, *args, **kwargs):
+        error = self._check_feature_enabled()
+        if error:
+            return error
         existing = self.get_object()
         actual_data = request.data
 

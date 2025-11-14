@@ -48,3 +48,5 @@ DEFAULT_CHECK_OUT = env_config('default_check_out', '11/17')
 
 CHECK_CACHE_DIR = env_config('check_cache_dir', os.path.expanduser('~/.cache/roombot'))
 SP_SYSTEM_CHECKS = env_config('sp_system_checks', 'true') == 'true'
+
+DISABLED_FEATURE_REDIRECT_URL = env_config('disabled_feature_redirect_url', 'https://zombo.com')

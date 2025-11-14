@@ -70,7 +70,7 @@ backend_unit_tests: local_backend_env
 	@CONFIG="$(shell pwd)/test.env"; \
 	if [ ! -e "$$CONFIG" ]; then echo "Config $$CONFIG not found"; exit 2; fi; \
 	. "$$CONFIG"; \
-	COVERAGE_FILE=.coverage COVERAGE_RCFILE=.coveragerc uv run --python `cat .python-version` --project backend/pyproject.toml -m coverage run --append -m pytest backend/reservations backend/waittime --maxfail=1 --disable-warnings -q && \
+	COVERAGE_FILE=.coverage COVERAGE_RCFILE=.coveragerc uv run --python `cat .python-version` --project backend/pyproject.toml -m coverage run --append -m pytest backend/reservations backend/waittime backend/party --maxfail=1 --disable-warnings -q && \
 	COVERAGE_FILE=.coverage COVERAGE_RCFILE=.coveragerc uv run --python `cat .python-version` --project backend/pyproject.toml -m coverage report -m
 
 # automagically generate django migrations

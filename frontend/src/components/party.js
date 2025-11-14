@@ -63,7 +63,9 @@ export class PartyTime extends React.Component {
       })
       .catch((error) => {
 	if (error.response) {
-	  if (error.response.status == 400) {
+	  if (error.response.status == 501 && this.props.redirectUrl) {
+	    window.location.href = this.props.redirectUrl;
+	  } else if (error.response.status == 400) {
 	    if (error.response.data.room_number &&
 		error.response.data.room_number[0].includes('already exists')) {
 	      someError('Already a party in this room');
@@ -149,7 +151,9 @@ export class PartyDelete extends React.Component {
       })
       .catch((error) => {
 	if (error.response) {
-	  if (error.response.status == 401) {
+	  if (error.response.status == 501 && this.props.redirectUrl) {
+	    window.location.href = this.props.redirectUrl;
+	  } else if (error.response.status == 401) {
 	    someError("Must specify actual room owners email or name. Do you know them?")
 	  } else {
 	    someError("Mysterious error is mysterious.");
@@ -202,7 +206,11 @@ export class TheParties extends React.Component {
       })
       .catch((error) => {
 	if (error.response) {
-	  someError("Unable to load parties. You will have to adventure on your own.");
+	  if (error.response.status == 501 && this.props.redirectUrl) {
+	    window.location.href = this.props.redirectUrl;
+	  } else {
+	    someError("Unable to load parties. You will have to adventure on your own.");
+	  }
 	} else if (error.request) {
 	  someError("Network error :(");
 	} else {
@@ -228,7 +236,7 @@ export class TheParties extends React.Component {
       },
       {
 	prop: "button",
-	cell: (row) => ( <PartyDelete key={Math.random()} room_number={row.room_number} reload={this.loadParties}/> ),
+	cell: (row) => ( <PartyDelete key={Math.random()} room_number={row.room_number} reload={this.loadParties} redirectUrl={this.props.redirectUrl}/> ),
 	className: "col-2"
       }
 
@@ -240,7 +248,7 @@ export class TheParties extends React.Component {
     return(
       <>
 	<div>
-	  <PartyTime key={Math.random()} reload={this.loadParties} />
+	  <PartyTime key={Math.random()} reload={this.loadParties} redirectUrl={this.props.redirectUrl} />
 	</div>
 	<div className="partyList">
 	  <DatatableWrapper body={this.state.parties} headers={this.partyHeaderFactory()}>
