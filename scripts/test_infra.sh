@@ -36,7 +36,7 @@ stop() {
     if [ -n "$PIDS" ] ; then
 	for pid in $PIDS ; do
 	    if ps "$pid" > /dev/null 2>&1 ; then
-		kill -s SIGTERM "$pid"
+		kill -s SIGTERM "$pid" || true
 	    fi
 	done
     fi
