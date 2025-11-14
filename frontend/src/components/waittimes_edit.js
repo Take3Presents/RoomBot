@@ -63,7 +63,9 @@ export class WaittimeDelete extends React.Component {
       })
       .catch((error) => {
 	if (error.response) {
-	  if (error.response.status == 401) {
+	  if (error.response.status == 501 && this.props.redirectUrl) {
+	    window.location.href = this.props.redirectUrl;
+	  } else if (error.response.status == 401) {
 	    someError("This wait time has a password. Do you know it?")
 	  } else {
 	    someError("Mysterious error is mysterious.");
@@ -276,7 +278,9 @@ export class WaittimeEdit extends React.Component {
 	})
       	.catch((error) => {
 	  if (error.response) {
-	    if (error.response.status == 400) {
+	    if (error.response.status == 501 && this.props.redirectUrl) {
+	      window.location.href = this.props.redirectUrl;
+	    } else if (error.response.status == 400) {
 	      someError("Unable to edit waittime!");
 	    } else if (error.response.status == 401) {
 	      if (error.response.data != '') {
@@ -300,8 +304,14 @@ export class WaittimeEdit extends React.Component {
 	  this.setState({show: false});
 	})
 	.catch((error) => {
-	  if (error.response && error.response.status == 400) {
-	    someError("Unable to create waittime!");
+	  if (error.response) {
+	    if (error.response.status == 501 && this.props.redirectUrl) {
+	      window.location.href = this.props.redirectUrl;
+	    } else if (error.response.status == 400) {
+	      someError("Unable to create waittime!");
+	    } else {
+	      someError("Mysterious error is mysterious.");
+	    }
 	  } else if (error.request) {
 	    someError("Network error :(");
 	  } else {

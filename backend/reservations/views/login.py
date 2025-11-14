@@ -1,4 +1,3 @@
-
 import os
 import logging
 import jwt
@@ -30,7 +29,8 @@ def update_last_login(guest):
 def login(request):
     if request.method == 'GET':
         data = {
-            'features': roombaht_config.FEATURES
+            'features': roombaht_config.FEATURES,
+            'disabled_redirect_url': roombaht_config.DISABLED_FEATURE_REDIRECT_URL
         }
         return Response(data, status=status.HTTP_200_OK)
     elif request.method == 'POST':

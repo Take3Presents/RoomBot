@@ -99,7 +99,11 @@ class UpdateTime extends React.Component {
       })
       .catch((error) => {
 	if (error.response) {
-	  someError("Mysterious error is mysterious.");
+	  if (error.response.status == 501 && this.props.redirectUrl) {
+	    window.location.href = this.props.redirectUrl;
+	  } else {
+	    someError("Mysterious error is mysterious.");
+	  }
 	} else if (error.request) {
 	  someError("Network error :(");
 	} else {
@@ -206,6 +210,11 @@ class aaaHowLongTho extends React.Component {
 		       has_password: result.data.has_password,
 		       short_name: result.data.short_name
 		      }, () => this.updateTime());
+      })
+      .catch((error) => {
+	if (error.response && error.response.status == 501 && this.props.redirectUrl) {
+	  window.location.href = this.props.redirectUrl;
+	}
       });
   }
   componentDidMount() {
@@ -216,7 +225,7 @@ class aaaHowLongTho extends React.Component {
     if (this.state.time > 0 && (this.state.free_update || !this.state.has_password)) {
       maybeUpdateTime = (
 	<Col className="buttonCol">
-	  <UpdateTime short_name={this.state.short_name} time={this.state.time} reload={this.loadWait} />
+	  <UpdateTime short_name={this.state.short_name} time={this.state.time} reload={this.loadWait} redirectUrl={this.props.redirectUrl} />
 	</Col>
       )
     }
@@ -269,6 +278,11 @@ export class TheTimers extends React.Component {
       .then((result) => {
 	    this.setState({waittimes: result.data});
       })
+      .catch((error) => {
+	if (error.response && error.response.status == 501 && this.props.redirectUrl) {
+	  window.location.href = this.props.redirectUrl;
+	}
+      });
   }
 
   componentDidMount() {
@@ -284,11 +298,11 @@ export class TheTimers extends React.Component {
       },
       {
 	prop: "button",
-	cell: (row) => ( <WaittimeEdit key={Math.random()} short_name={row.short_name} reload={this.loadWaits}/> )
+	cell: (row) => ( <WaittimeEdit key={Math.random()} short_name={row.short_name} reload={this.loadWaits} redirectUrl={this.props.redirectUrl}/> )
       },
       {
 	prop: "button",
-	cell: (row) => ( <WaittimeDelete key={Math.random()} short_name={row.short_name} reload={this.loadWaits}/> )
+	cell: (row) => ( <WaittimeDelete key={Math.random()} short_name={row.short_name} reload={this.loadWaits} redirectUrl={this.props.redirectUrl}/> )
       }
 
     ];
@@ -298,7 +312,7 @@ export class TheTimers extends React.Component {
     return(
       <>
       <div>
-	<WaittimeEdit key={Math.random()} reload={this.loadWaits}/>
+	<WaittimeEdit key={Math.random()} reload={this.loadWaits} redirectUrl={this.props.redirectUrl}/>
       </div>
       <div>
 	<DatatableWrapper body={this.state.waittimes} headers={this.waitHeaderFactory()}>
