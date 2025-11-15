@@ -14,7 +14,9 @@ class SubmitForm extends React.Component {
         email: '',
         pass: '',
         party: false,
-        waittime: false
+        waittime: false,
+        disableLogins: false,
+        disableLoginsMessage: ''
     };
 
     handleSubmit = event => {
@@ -30,7 +32,12 @@ class SubmitForm extends React.Component {
 	
         axios.post(window.location.protocol + "//" + window.location.hostname + ":" + (window.location.protocol == "https:" ? "8443" : "8000") +  "/api/login/", guest )
             .then(res=>{
-              window.localStorage.setItem('jwt', JSON.stringify({'jwt': res.data.jwt}));
+              const jwtData = {'jwt': res.data.jwt};
+              // Store system notice if present (for admin logins)
+              if (res.data.system_notice) {
+                jwtData.system_notice = res.data.system_notice;
+              }
+              window.localStorage.setItem('jwt', JSON.stringify(jwtData));
                 if (res.data.admin) {
 		  window.location = "/admin";
 	        } else {
@@ -41,6 +48,12 @@ class SubmitForm extends React.Component {
 	    if (error.response) {
 	      if (error.response.status == 401) {
 		notifyLoginError("invalid credentials");
+	      } else if (error.response.status == 403) {
+		// Parse the error message from the response
+		const errorMsg = error.response.data && error.response.data.error
+		  ? error.response.data.error
+		  : "Access forbidden";
+		notifyLoginError(errorMsg);
 	      } else if (error.request) {
 		notifyLoginError("network error");
 	      } else {
@@ -98,6 +111,12 @@ class SubmitForm extends React.Component {
 	  if (res.data.features.includes("waittime")) {
 	    this.setState({waittime: true});
 	  }
+	  if (res.data.disable_logins) {
+	    this.setState({
+	      disableLogins: true,
+	      disableLoginsMessage: res.data.disable_logins_message
+	    });
+	  }
 	})
         .catch((error) => {
 	  if (error.response) {
@@ -113,6 +132,7 @@ class SubmitForm extends React.Component {
     render() {
         var maybeParty;
         var maybeWait;
+        var maybeDisableBanner;
         if ( this.state.party ) {
             maybeParty = (
 	      <Col>
@@ -131,10 +151,18 @@ class SubmitForm extends React.Component {
 	      </Col>
             )
         }
+        if ( this.state.disableLogins ) {
+            maybeDisableBanner = (
+	      <div className="alert alert-warning" role="alert">
+	        <strong>Notice:</strong> {this.state.disableLoginsMessage}
+	      </div>
+            )
+        }
         return (
         <span className="auth-wrapper">
             <div className="auth-inner">
                 <h3>Sign In</h3>
+		{maybeDisableBanner}
                 <form onSubmit = { this.handleSubmit }>
                 <div className="boxez">
                     <label> Email:
