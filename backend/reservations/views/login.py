@@ -30,7 +30,9 @@ def login(request):
     if request.method == 'GET':
         data = {
             'features': roombaht_config.FEATURES,
-            'disabled_redirect_url': roombaht_config.DISABLED_FEATURE_REDIRECT_URL
+            'disabled_redirect_url': roombaht_config.DISABLED_FEATURE_REDIRECT_URL,
+            'disable_logins': roombaht_config.DISABLE_LOGINS,
+            'disable_logins_message': roombaht_config.DISABLE_LOGINS_MESSAGE
         }
         return Response(data, status=status.HTTP_200_OK)
     elif request.method == 'POST':
@@ -47,8 +49,10 @@ def login(request):
         logger.debug("found %s staff, %s guests that match %s",
                      staff_email.count(), guest_email.count(), email)
         # Check if login attempt is admin
+        is_admin = False
         for admin in staff_email:
             if data['jwt'] == admin.guest.jwt:
+                is_admin = True
                 resp = jwt.encode({"email":admin.email,
                                    "datetime":str(datetime.datetime.utcnow())},
                                    jwt_key,
@@ -56,7 +60,21 @@ def login(request):
                 logger.info("[+] Admin login success for %s", admin.email)
                 update_last_login(admin.guest)
                 body = {"jwt": resp, "admin": True}
+
+                # Notify admin if logins are disabled for guests
+                if roombaht_config.DISABLE_LOGINS:
+                    body["system_notice"] = "Guest logins are currently disabled system-wide."
+
                 return Response(body, status=status.HTTP_201_CREATED)
+
+        # Check if logins are disabled for non-admin users
+        if roombaht_config.DISABLE_LOGINS:
+            logger.info("[!] Login blocked for non-admin user: %s from IP: %s",
+                       email, request.META.get('REMOTE_ADDR', 'unknown'))
+            return Response(
+                {"error": roombaht_config.DISABLE_LOGINS_MESSAGE},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # Check if login attempt is guest
         for guest in guest_email:
