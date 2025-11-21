@@ -43,13 +43,13 @@ variable "postgres_version" {
 variable "staging" {
   type = bool
   description = "Whether or not to enable staging environment"
-  default = false
+  default = true
 }
 
 variable "production" {
   type = bool
   description = "Whether or not to enable production environment"
-  default = false
+  default = true
 }
 
 output "nameservers" {
